@@ -15,6 +15,8 @@ import processing.core.*;
  */
 
 public class PixelScanner {
+	/* list of available scanner types */
+	enum ScannerType {HILBERT, MOORE, ZIGZAG};
 	
 	// myParent is a reference to the parent sketch
 	PApplet myParent;
