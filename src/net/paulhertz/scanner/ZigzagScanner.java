@@ -1,7 +1,9 @@
 package net.paulhertz.scanner;
 
-
-// Why was this flagged with an error? It compiles. It's in the package. It's exactly like the other implementations, AFAIK.
+// Bizarre error "PixelScannerINF cannot be resolved to a type" does not prevent compilation or library build. 
+// The same error appears for MooreScanner and HilbertScanner. It may have something to do with package level 
+// visibility of PixelScannerINF in GlitchSort2? 
+// Seems to be a common confusion in Eclipse. Clean the Project clears the error.
 public class ZigzagScanner implements PixelScannerINF {
 	/** zigzag x coord */
 	private int zagx;
@@ -23,7 +25,10 @@ public class ZigzagScanner implements PixelScannerINF {
 	public boolean verbose = false;
 
 	/**
-	 * @param order the number of pixels on an edge of the scan block
+	 * @param order   the number of pixels on an edge of the scan block
+	 *                Note that in the Moore and Hilbert scanners the "order" param is called "depth"
+	 *                because its value is the depth of recursion of the curve. 
+	 *                TODO generalize ZigzagScanner to accept any height and width dimensions. At the moment, it's a square.
 	 */
 	public ZigzagScanner(int order) {
 		d = order;
@@ -151,38 +156,35 @@ public class ZigzagScanner implements PixelScannerINF {
 		}
 	}
 
+	
+	/**
+	 * @return   returns -1 because the ZigzagScanner does not use recursion
+	 */
 	public int getDepth() {
-		// TODO Auto-generated method stub
 		return -1;
 	}
 
 	public int getBlockWidth() {
-		// TODO Auto-generated method stub
 		return d;
 	}
 
 	public int getBlockHeight() {
-		// TODO Auto-generated method stub
 		return d;
 	}
 
 	public int getSize() {
-		// TODO Auto-generated method stub
 		return n;
 	}
 
 	public int lookup(int x, int y) {
-		// TODO Auto-generated method stub
 		return indexMap[x + d * y];
 	}
 
 	public int xcoord(int pos) {
-		// TODO Auto-generated method stub
 		return xcoords[pos];
 	}
 
 	public int ycoord(int pos) {
-		// TODO Auto-generated method stub
 		return ycoords[pos];
 	}
 

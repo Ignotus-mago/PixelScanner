@@ -36,6 +36,7 @@ public class MooreScanner implements PixelScannerINF {
 
 	/**
 	 * @param depth   the depth of recursion that determines the number of pixels on an edge of the scan block
+	 *                Depth can be calculated from the image dimensions as (int) ((log(height)/log(2))).
 	 */
 	public MooreScanner(int depth) {
 		this.depth = depth;
