@@ -48,6 +48,11 @@ public class MooreScanner implements PixelScannerINF {
 		generateCoords();
 	}
 
+	public PixelScanner.ScannerType getScannerType() {
+		return PixelScanner.ScannerType.MOORE;
+	}
+
+
 	/**
 	 * Generates coordinates of a block of pixels of specified dimensions, offset from (0,0).
 	 */

@@ -12,6 +12,9 @@ package net.paulhertz.scanner;
  *
  */
 public interface PixelScannerINF {
+	
+	/** @return the type of this scanner, read-only */
+	public PixelScanner.ScannerType getScannerType();
 
 	/** flip the order of the x cooordinates */
 	abstract void flipX();

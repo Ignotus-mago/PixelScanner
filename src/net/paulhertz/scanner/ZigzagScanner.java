@@ -39,6 +39,11 @@ public class ZigzagScanner implements PixelScannerINF {
 		indexMap = new int[n];
 		generateCoords();
 	}
+	
+	public PixelScanner.ScannerType getScannerType() {
+		return PixelScanner.ScannerType.MOORE;
+	}
+
 
 	public void flipX() {
 		int m = d - 1;

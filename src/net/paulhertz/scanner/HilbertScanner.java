@@ -49,6 +49,10 @@ public class HilbertScanner implements PixelScannerINF {
 		doXYSwap = (depth % 2 == 1);
 		generateCoords();
 	}
+	
+	public PixelScanner.ScannerType getScannerType() {
+		return PixelScanner.ScannerType.HILBERT;
+	}
 
 	/** needed to make corrections when width is an odd power of 2 */
 	// convert (x,y) to d, the distance (index value) into the curve
