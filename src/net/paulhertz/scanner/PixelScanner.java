@@ -19,7 +19,8 @@ public class PixelScanner {
 	public enum ScannerType {HILBERT, MOORE, ZIGZAG, CUSTOM};
 	
 	// myParent is a reference to the parent sketch
-	PApplet myParent;
+	// we make it static so it's available to other classes 
+	static PApplet myParent;
 
 	int myVariable = 0;
 	
