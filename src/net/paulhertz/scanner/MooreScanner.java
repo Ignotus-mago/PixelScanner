@@ -66,6 +66,7 @@ public class MooreScanner implements PixelScannerINF {
 			System.out.println("----->>> Cannot generate Moore curve for depth < 2");
 			return;
 		}
+		// rewrite the order of Hilbert curve coordinates to get the order for a Moore curve
 		HilbertScanner hilb = new HilbertScanner(hilbDepth);
 		hilb.swapCoords();
 		hilb.flipX();

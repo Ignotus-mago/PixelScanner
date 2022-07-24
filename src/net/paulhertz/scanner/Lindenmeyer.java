@@ -30,7 +30,7 @@ public class Lindenmeyer extends Object {
    */
   public String get(String clef) {
     if (transTable.containsKey(clef))
-      return (String) transTable.get(clef);
+      return transTable.get(clef);
     return clef;
   }
 
@@ -47,7 +47,7 @@ public class Lindenmeyer extends Object {
     //System.out.println("level is "+ levels);
     ArrayList<String> temp = new ArrayList<String>();
     for (int i = 0; i < tokens.size(); i++) {
-      String ch = (String) tokens.get(i);
+      String ch = tokens.get(i);
       String val = get(ch);
       for (int j = 0; j < val.length(); j++) {
         temp.add("" + val.charAt(j));
@@ -82,7 +82,7 @@ public class Lindenmeyer extends Object {
      if (verbose) {
        System.out.println("Hilbert L-system at depth "+ depth +"\n");
        for (int i = 0; i < buf.size(); i++) {
-    	   System.out.print((String) buf.get(i));
+    	   System.out.print(buf.get(i));
        }
      }
      return buf;
