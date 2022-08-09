@@ -11,15 +11,25 @@ import processing.core.PImage;
  */
 public class ImageTransform {
 	PGraphics itGraf;
-	int itw = 1024;
-	int ith = 1024;
+	int itw;
+	int ith;
 
-	/**
-	 * initializes a PGraphics with width = height = 1024.
-	 */
-	public ImageTransform() {
-		this.itGraf = PixelScanner.myParent.createGraphics(itw, ith);
-	}
+  /**
+   * initializes a PGraphics with width = w and height = h.
+   */
+  public ImageTransform(int w, int h) {
+    this.itw = w;
+    this.ith = h;
+    this.itGraf = PixelScanner.myParent.createGraphics(itw, ith);
+  }
+
+  /**
+   * initializes a PGraphics with width = height = 1024.
+   */
+  public ImageTransform() {
+    this(1024, 1024);
+  }
+
 
 	/**
 	 * @return itGraf, the PGraphics instance used for transforms
