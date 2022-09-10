@@ -110,6 +110,9 @@ public class ImageTransform {
 			img = flipY(img);
 			break;
 		}
+		case NADA: {
+			break;
+		}
 		}
 		return img;
 	}
@@ -151,6 +154,10 @@ public class ImageTransform {
 		}
 		case FLIPY: {
 			img = flipY(img, c);
+			break;
+		}
+		case NADA: {
+			img = nada(img, c);
 			break;
 		}
 		}
@@ -477,5 +484,23 @@ public class ImageTransform {
 		itGraf.endDraw();
 		return itGraf.get();
 	}
+	
+	/**
+	 * Leaves image geometry untransformed but possibly with a different background color (for images with an alpha channel)
+	 * @param img   PImage to transform
+	 * @param c     background color (may affect alpha channel of output)
+	 * @return      a PImage obtained from the PGraphics instance used for transforms
+	 */
+	public PImage nada(PImage img, int c) {
+		adjustToImage(img);
+		itGraf.beginDraw();
+		itGraf.pushMatrix();
+		itGraf.background(c);
+		itGraf.image(img, 0, 0);
+		itGraf.popMatrix();
+		itGraf.endDraw();
+		return itGraf.get();
+	}
+	
 
 }
