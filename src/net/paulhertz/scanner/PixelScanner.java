@@ -46,7 +46,7 @@ public class PixelScanner {
 	
 	
 	public String sayHello() {
-		return "hello library.";
+		return "Hello from PixelScanner.";
 	}
 	/**
 	 * return the version of the Library.
@@ -73,5 +73,9 @@ public class PixelScanner {
 	public int getVariable() {
 		return myVariable;
 	}
+
+	
+	
+	
 }
 
