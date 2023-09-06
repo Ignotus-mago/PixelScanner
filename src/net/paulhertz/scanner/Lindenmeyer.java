@@ -87,6 +87,143 @@ public class Lindenmeyer extends Object {
      }
      return buf;
    }
+   
+   
+   
+   
+
+   
+   public int[] loadAnimSteps(AnimStepper stepper) {
+	   for (AnimUnit au : stepper.getList()) {
+	     
+	   }
+	   return null;
+	 }
+
+   
+   
+/**
+ * Animation frame-counting tool
+ */
+public class AnimStepper {
+	   public ArrayList<AnimUnit> stepList;
+	   AnimUnit currentUnit;  // the unit we are currently accessing
+	   int u = 0;        // index of the unit in the stepList
+	   int t = 0;        // index of the current count over 0..currentUnit.d
+
+	   public AnimStepper() {
+	     this.stepList = new ArrayList<AnimUnit>();
+	   }
+
+	   public AnimStepper(AnimUnit au) {
+	     this();
+	     this.addUnit(au);
+	   }
+
+	   public void addUnit(AnimUnit au) {
+	     stepList.add(au);
+	   }
+
+	   public int totalSlide() {
+	     int slide = 0;
+	     for (int i = 0; i < stepList.size(); i++) {
+	       slide += stepList.get(i).slide();
+	     }
+	     return slide;
+	   }
+	   
+	   public int totalSteps() {
+		     int steps = 0;
+		     for (int i = 0; i < stepList.size(); i++) {
+		       steps += stepList.get(i).getCount();
+		     }
+		     return steps;		   
+	   }
+	   
+	   public int totalFrames() {
+		     int frames = 0;
+		     for (int i = 0; i < stepList.size(); i++) {
+		       frames += stepList.get(i).frames() ;
+		     }
+		     return frames; 
+	   }
+	   
+	   public int[] getStepArray() {
+		   int[] stepArray = new int[this.totalSteps()];
+		   for (AnimUnit au: this.stepList) {
+			   
+		   }
+		   return stepArray;
+	   }
+
+	   public void reset() {
+	     this.u = 0;
+	     this.t = 0;
+	   }
+	   
+	   public ArrayList<AnimUnit> getList() {
+	     return this.stepList;
+	   }
+	 }
+
+
+/**
+ * Data storage for number of steps n each of duration d, with additional scaling factor s.
+ *
+ */
+public class AnimUnit {
+	   int d = 1;        // duration of each step
+	   int n = 1;        // number of steps
+	   float s = 1.0f;   // scaling factor, multiplies the unit size of pixel blocks.
+
+	   public AnimUnit(int duration, int count) {
+	     this.d = duration;
+	     this.n = count;
+	   }
+
+	   public AnimUnit(int duration, int count, float stepSize) {
+	     this.d = duration;
+	     this.n = count;
+	     this.s = stepSize;
+	   }
+
+	   public int getDuration() {
+	     return d;
+	   }
+	   public void setDuration(int d) {
+	     this.d = d;
+	   }
+
+	   public int getCount() {
+	     return n;
+	   }
+	   public void setCount(int n) {
+	     this.n = n;
+	   }
+
+	   public float getStepSize() {
+	     return s;
+	   }
+	   public void setStepSize(float s) {
+	     this.s = s;
+	   }
+
+	   public int frames() {
+	     return this.d * this.n;
+	   }
+
+	   public int slide() {
+	     return Math.round(this.s * this.frames());
+	   }
+	   
+	   public int[] toArray() {
+		   int[] arr = new int[n];
+		   for (int i = 0; i < n; i++) {
+			   arr[i] = d;
+		   }
+		   return arr;
+	   }
+	 }
   
   
 }
