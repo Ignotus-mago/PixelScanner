@@ -73,13 +73,13 @@ public class HilbertScanner implements PixelScannerINF {
 	}
 
 	// convert curve index d to display coordinates (x,y), returning the result in bertx and berty
-	// n = number of points in curve, a powere of 4 = (2^k * 2^k)  
+	// n = number of points in curve, a power of 4 = (2^k * 2^k)  
 	private void d2xy(int n, int d) {
 		int rx, ry, s, t = d;
 		bertx = berty = 0;
 		for (s = 1; s < n; s *= 2) {
-			rx = 1 & (t / 2);
-			ry = 1 & (t ^ rx);
+			rx = 1 & (t / 2);			// bitwise AND (truncated int division)
+			ry = 1 & (t ^ rx);			// bitwise AND (^ is exclusive OR operation)
 			rot(s, rx, ry);
 			bertx += s * rx;
 			berty += s * ry;
@@ -221,6 +221,10 @@ public class HilbertScanner implements PixelScannerINF {
 
 	public void setVerbose(boolean verbose) {
 		this.verbose = verbose;
+	}
+	
+	public int[] getIndexMap() {
+		return this.indexMap;
 	}
 
 	public int lookup(int x, int y) {

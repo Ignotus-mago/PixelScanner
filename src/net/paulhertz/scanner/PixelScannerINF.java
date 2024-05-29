@@ -63,7 +63,7 @@ public interface PixelScannerINF {
 
 	/**
 	 * @param pix      an array of pixels
-	 * @param sprout   an array of d * d pixels to write to the array of pixels
+	 * @param sprout   an array of pixels to write to pix
 	 * @param w        width of the image represented by the array of pixels
 	 * @param h        height of the image represented by the array of pixels
 	 * @param x        x-coordinate of the location in the image to write to
