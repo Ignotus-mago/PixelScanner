@@ -3,7 +3,6 @@
  */
 package net.paulhertz.scanner;
 
-import processing.core.*;
 
 /**
  * Parent class for child classes that map a 1D "signal" array to a 2D "image" array. 
@@ -12,14 +11,14 @@ import processing.core.*;
  * DATA REPRESENTATION
  * 
  * For the sake of generality, the types for image and audio data are implemented outside this class. 
- * In Processing, PImage wraps image data. I have been using the minim library for audio, but the
- * built-in audio in Processing 4 is definitely an option. 
+ * In Processing, PImage wraps image data. I have been using the minim library for audio, 
+ * (https://code.compartmental.net/minim/) but the built-in audio in Processing 4 is definitely an option. 
  * 
- * The image pixels are represented as an array of ints, and the audio samples are represented as 
- * an array of floats. Processing.core.PImage.pixels can supply an int array. Whatever audio class 
- * you use can supply the float array.
+ * In this class, image pixels are represented as an array of ints, and audio samples are represented as 
+ * an array of floats. Processing.core.PImage.pixels can provide an int array. Whatever audio class 
+ * you use can provide the float array.
  * 
- * The image int array required to be a standard 24- or 32-bit RGB or RGBA bitmap image, in row major 
+ * The image int array is required to be a standard 24- or 32-bit RGB or RGBA bitmap image, in row major 
  * order, with (0,0) at upper left corner. The signal array is typically a floating point array of
  * values in the range [-1.0,1.0], a standard format for audio values. It is up to the implementation 
  * to devise methods for translating values from signal to image and vice versa: unless my default
@@ -177,16 +176,20 @@ import processing.core.*;
  *	stampSamplesInt(pos, length, int[])		    			target = signal, ordered by image, transcode to int values
  * 
  * 
- * Other Operations
- * 
- * The following are suggestions for methods that could be implemented in children of PixelArrayMapper.
+ * ARRAY SHIFTING
  * 
  * Standard operations we can perform with the signal array:
  *   shiftLeft()		an array rotation where index values decrease and wrap around at the beginning
  *   shiftRight()		an array rotation where index values increase and wrap around at the end
  *   
- * Other operations that can be implemented by child classes:
- *	 audio synthesis operations
+ * This have proved useful for animation.
+ * 
+ * OTHER OPEREATIONS
+ * 
+ * The following are suggestions for methods that could be implemented in children of PixelArrayMapper.
+ *  
+ *	 audio synthesis (the WaveSynth algorithm used in the animation for Campos | Temporales)
+ *	 pattern generation (the Argosy pattern algorithm for Campos | Temporales, https://vimeo.com/856300250)
  * 	 phase shifting, amplitude modulation, etc. 
  *   FFT operations on both image and signal data
  *   pixel sorting, typically on image data
@@ -194,6 +197,9 @@ import processing.core.*;
  *   blending images
  *   mixing signals
  *   
+ * 
+ * UPDATING AUDIO AND IMAGE
+ * 
  * As a rule, operations on the signal should be followed by writing to the image, and operations
  * on the image should be followed by writing to the signal. This will keep the values synchronized, 
  * even though they have different numerical formats. 
@@ -212,26 +218,24 @@ import processing.core.*;
  */
 public class PixelAudioMapper {
 	// necessary instance variables
-	/** The image for signal to image mapping. Note that the pixel values are accessed through the pixels[] array. */
-	protected int[] img;
 	/** image width */
 	protected int w;
 	/** image height */
 	protected int h;
 	/** pixel array and signal array length, equal to w * h */
 	protected int len;
-	/** The signal for signal to image mapping */
-	protected float[] sig;
 	/** Lookup table to go from the signal to the image: index values over {0..(h * w - 1)} 
 	 * point to a corresponding index position in the image array img.pixels[] */
 	protected int signalToImageLUT[];
 	/** Lookup table to go from the image to the signal: index values over {0..(h * w - 1)} 
 	 * point to a corresponding index position in the signal array sig[] */
 	protected int imageToSignalLUT[];
-	
+	/** PixelMapGenINF instance to generate LUTs */
+	protected PixelMapGenINF generator;
+
 	/** List of available color channels, "L" for lightness, since "B" for brightness is taken */
 	public static enum ChannelNames {
-		RGB, R, G, B, H, S, L;
+		R, G, B, H, S, L, A, RGB, RGBA;
 	}
 
 	
@@ -241,12 +245,11 @@ public class PixelAudioMapper {
 	 * @param w
 	 * @param h
 	 */
-	public PixelAudioMapper(int w, int h, int[] img, float[] sig) {
+	public PixelAudioMapper(int w, int h, PixelMapGenINF gen) {
 		this.w = w;
 		this.h = h;
 		this.len = w * h;
-		this.img = img;
-		this.sig = sig;
+		this.generator = gen;
 		this.signalToImageLUT = this.generateSignalToImageLUT();
 		this.generateImageToSignalLUT(signalToImageLUT);
 	}
@@ -273,44 +276,9 @@ public class PixelAudioMapper {
 	
 	/** @return a string representation of our data, possibly partial */
 	public String toString() {
-		return "";
+		return "Parent class for PixelAudioMapper objects, with documentation in its comments.";
 	}
-	
-
-	//------------- Image and Signal -------------//
-
-	
-	/**
-	 * @return 	the image associated with this instance 
-	 */
-	public int[] getImage() {
-		return this.img;
-	}
-
-	/**
-	 * Warning: the size of new image must conform to the size the current image and signal arrays.
-	 * @param img	the image to set
-	 */
-	public void setImage(int[] img) {
-		this.img = img;
-	}
-
-	/**
-	 * @return 	the signal associated with this instance of PixelAudioMapper
-	 */
-	public float[] getSignal() {
-		return this.sig;
-	}
-	
-	/**
-	 * Sets a new signal array.
-	 * Warning: the size of the new signal array must conform to the size the current image and signal arrays.
-	 * @param sig	the signal array to set
-	 */
-	public void setSignal(float[] sig) {
-		this.sig = sig;
-	}
-	
+		
 
 	//------------- LUTs -------------//
 
@@ -340,14 +308,14 @@ public class PixelAudioMapper {
 	 * @param imgLUT
 	 */
 	protected void setImageToSignalLUT(int[] imgLUT) {
-		
+
 	}
 	
 	/**
 	 * Generate signalToImageLUT. 
 	 */
 	public int[] generateSignalToImageLUT() {
-		
+		return this.generator.generate();
 	}
 	
 	/**
@@ -399,32 +367,6 @@ public class PixelAudioMapper {
 	
 }
 
-
-
-
-////------------- do we still need these methods from the previous interface? Maybe. Or maybe they belong in a utility class -------------//
-//we should also have methods to generate each LUT from the other 
-//
-//
-///** @return the type of this scanner, read-only */
-//public PixelScanner.ScannerType getScannerType();
-//
-///** flip the order of the x coordinates */
-//abstract void flipX();
-//
-///** flip the order of the y coordinates */
-//abstract void flipY();
-//
-///** swap the x and y coordinates in the map */
-//abstract void swapXY();
-//
-///** swap all x and y coordinates */
-//abstract void swapCoords();
-//
-///** generate coords for indexMap */ 		// <--- might be a keeper 
-//abstract void generateCoords();
-//
-////------------- | -------------//
 
 
 
