@@ -2,9 +2,6 @@ package net.paulhertz.scanner;
 
 import java.util.ArrayList;
 
-import processing.core.PApplet;
-import processing.core.PGraphics;
-import processing.core.PImage;
 
 /**
  * @author ignot
