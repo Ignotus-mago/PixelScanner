@@ -7,15 +7,14 @@ public class DiagonalZigzagGen extends PixelMapGen {
 	private int w;
 	private int h;
 	private int len;
-	int[] pixelMap;
-	int[] sampleMap;
-	ArrayList<int[]> coords;
+	private int[] pixelMap;
+	private int[] sampleMap;
+	private ArrayList<int[]> coords;
 
 	
 	public DiagonalZigzagGen(int width, int height) {
 		super(width, height);
 	}
-	
 	
 	
 	@Override
@@ -25,7 +24,7 @@ public class DiagonalZigzagGen extends PixelMapGen {
 	}
 
 	/**
-	 * Always returns true, no restrictions on width and height. 
+	 * Always returns true for width and height greater than 2.
 	 */
 	@Override
 	public boolean validate(int width, int height) {
@@ -58,65 +57,26 @@ public class DiagonalZigzagGen extends PixelMapGen {
 		return pixelMap;
 	}
 
-	@Override
-	public int getWidth() {
-		return w;
+	/**
+	 * Generically-named method that calls the custom coordinate generation method (here, generateZigzagDiagonalCoordinates).
+	 * Consider putting additional initializations here, if required by your coordinate generation method,
+	 * rather than in the generate() method, which will then only handle coords initialization and the 
+	 * built-in pixelMap and sampleMap initializations. 
+	 * 
+	 * @return 	An ArrayList<int[]> of bitmap coordinates in the order the signal mapping would visit them. 
+	 * 
+	 */
+	private ArrayList<int[]> generateCoordinates() {
+		return this.generateZigzagDiagonalCoordinates(this.w, this.h);
 	}
-
-	@Override
-	public int getHeight() {
-		return h;
-	}
-	
-	public int getSize() {
-		return len;
-	}
-	
-	public int[] getPixelMap() {
-		if (this.pixelMap == null) {
-			return this.generate();
-		}
-		return this.pixelMap;
-	}
-	
-	public int[] getSampleMap() {
-		if (this.sampleMap == null) {
-			this.generate();
-		}
-		return this.sampleMap;
-	}
-	
-	public int[] getPixelMapCopy() {
-		if (this.pixelMap == null) {
-			return this.generate();
-		}
-		return Arrays.copyOf(pixelMap, len);
-	}
-	
-	public int[] getSampleMapCopy() {
-		if (this.sampleMap == null) {
-			this.generate();
-		}
-		return Arrays.copyOf(sampleMap, len);
-	}
-
-	public ArrayList<int[]> getCoordinates() {
-		if (this.coords == null) {
-			this.generate();
-		}
-		return this.coords;
-	}
-	
-	protected ArrayList<int[]> generateCoordinates() {
-		this.coords = this.generateZigzagDiagonalCoordinates(this.w, this.h);
-		return this.coords;
-	}
-	
 	
 	/**
-	 * @param width
-	 * @param height
-	 * @return 
+	 * The coordinate generation method for this class. Both lookup tables are derived from the coordinate list created
+	 * by this method. 
+	 * 
+	 * @param   width		width of the 2D bitmap pixel array
+	 * @param   height		height of the 2D bitmap pixel array
+	 * @return 				an array of coordinate pairs
 	 */
 	private ArrayList<int[]> generateZigzagDiagonalCoordinates(int width, int height) {
 		ArrayList<int[]> coordinates = new ArrayList<>();
@@ -156,5 +116,15 @@ public class DiagonalZigzagGen extends PixelMapGen {
 		return coordinates;
 	}
 	
+
+	/* ------------------------------ GETTERS AND NO SETTERS ------------------------------ */
+	/*                                                                                      */
+	/* For the most part, we don't want to alter variables once they have been initialized. */
+	/* All the usual getters are implemented in the abstract class PixelMapGen.             */
+	/* These include: getWidth(), getHeight(), getSize(), getPixelMap(), getPixelMapCopy(), */
+	/* getSampleMap(), get SampleMapCopy(), getCoordinates(), getCoordinatesCopy().         */
+	/*                                                                                      */
+	/* ------------------------------------------------------------------------------------ */
 	
+		
 }

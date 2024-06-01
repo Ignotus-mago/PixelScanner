@@ -5,9 +5,9 @@ package net.paulhertz.scanner;
 
 
 /**
- * Parent class for child classes that map a 1D "signal" array of floating point numbers
- * to a 2D "image" array of integers. It makes assumptions about the range of values 
- * in these arrays, which are detailed below. This class specifically handles the one-to-one
+ * PixelAudioMapper is the parent class for child classes that map a 1D "signal" array of 
+ * floating point numbers to a 2D "image" array of integers. It makes assumptions about the 
+ * range of values in these arrays, detailed below. This class specifically handles the one-to-one
  * mapping between the signal and the image arrays. The mapping is handled by lookup tables 
  * created by a separate mapping generator class. If you think of the signal as a space-filling
  * curve that visits each pixel in the image, one lookup table is a list of index numbers of
@@ -266,7 +266,7 @@ public class PixelAudioMapper {
 	 * @param h		height
 	 * @param gen 	A PixelMapGenINF instance 
 	 */
-	public PixelAudioMapper(int w, int h, PixelMapGenINF gen) {
+	public PixelAudioMapper(int w, int h, PixelMapGen gen) {
 		this.w = w;
 		this.h = h;
 		this.len = w * h;

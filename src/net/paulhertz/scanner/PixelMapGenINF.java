@@ -3,7 +3,7 @@ package net.paulhertz.scanner;
 import java.util.ArrayList;
 
 /**
- * A mapping generator for two arrays with the same number of elements (same cardinality), 
+ * Interface for a mapping generator for two arrays with the same number of elements (same cardinality), 
  * used specifically for mapping 1D audio signals to 2D bitmaps. 
  * See the PixelAudioMapper class for details of the mapping. 
  * See the abstract PixMapGen class for a parent class.
@@ -25,7 +25,8 @@ public interface PixelMapGenINF {
 	public boolean validate(int width, int height);
 
 	/**
-	 * The core method for the user to write. 
+	 * The core method for the user to write. See the abstract class PixelMapGen and the 
+	 * example class DiagonalZigzagGen for more information on how to implement PixelMapGen classes. 
 	 * @return the mapping from the 1D array (audio signal) to the 2D array (bitmap).
 	 */
 	public int[] generate();
@@ -39,5 +40,10 @@ public interface PixelMapGenINF {
 	 * @return	the height of the bitmap array.
 	 */
 	public int getHeight();
+
+	/**
+	 * @return	the size (height * width) of the bitmap array.
+	 */
+	public int getSize();
 	
 }

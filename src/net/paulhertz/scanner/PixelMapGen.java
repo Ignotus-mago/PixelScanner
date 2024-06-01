@@ -66,18 +66,18 @@ public abstract class PixelMapGen implements PixelMapGenINF {
 		return this.pixelMap;
 	}
 	
-	public int[] getSampleMap() {
-		if (this.sampleMap == null) {
-			this.generate();
-		}
-		return this.sampleMap;
-	}
-	
 	public int[] getPixelMapCopy() {
 		if (this.pixelMap == null) {
 			return this.generate();
 		}
 		return Arrays.copyOf(pixelMap, len);
+	}
+	
+	public int[] getSampleMap() {
+		if (this.sampleMap == null) {
+			this.generate();
+		}
+		return this.sampleMap;
 	}
 	
 	public int[] getSampleMapCopy() {
@@ -94,13 +94,16 @@ public abstract class PixelMapGen implements PixelMapGenINF {
 		return this.coords;
 	}
 	
-	/**
-	 * @return 	An ArrayList<int[]> of bitmap coordinates in the order the signal mapping would visit them. 
-	 * 			It is designed to be inaccessible outside its package, but you can have it call a public method
-	 * 			that passes it the necessary values. See DiagonalZigzagGen for an example. 
-	 * 
-	 */
-	protected abstract ArrayList<int[]> generateCoordinates();
-	
+	public ArrayList<int[]> getCoordinatesCopy() {
+		if (this.coords == null) {
+			this.generate();
+		}
+		ArrayList<int[]> coordsCopy = new ArrayList<int[]>(len);
+		for (int[] coord: this.coords) {
+			coordsCopy.add(coord);
+		}
+		return coordsCopy;
+	}	
+		
 
 }

@@ -1,6 +1,18 @@
 package net.paulhertz.scanner;
 
-public class HilbertGen implements PixelMapGenINF {
+import java.util.ArrayList;
+
+public class HilbertGen extends PixelMapGen {
+	private int w;
+	private int h;
+	private int len;
+	private int[] pixelMap;
+	private int[] sampleMap;
+	private ArrayList<int[]> coords;
+
+	public HilbertGen(int width, int height) {
+		super(width, height);
+	}
 
 	@Override
 	public String describe() {
@@ -17,18 +29,6 @@ public class HilbertGen implements PixelMapGenINF {
 	public int[] generate() {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	public int getWidth() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int getHeight() {
-		// TODO Auto-generated method stub
-		return 0;
 	}
 
 }
