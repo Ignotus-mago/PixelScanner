@@ -251,7 +251,7 @@ public class PixelAudioMapper {
 	 * point to a corresponding index position in the signal array sig[] */
 	protected int imageToSignalLUT[];
 	/** PixelMapGenINF instance to generate LUTs */
-	protected PixelMapGenINF generator;
+	protected PixelMapGen generator;
 
 	/** List of available color channels, "L" for lightness, since "B" for brightness is taken */
 	public static enum ChannelNames {
@@ -264,15 +264,15 @@ public class PixelAudioMapper {
 	 * Basic constructor for PixelAudio, sets up all variables. 
 	 * @param w		width
 	 * @param h		height
-	 * @param gen 	A PixelMapGenINF instance 
+	 * @param gen 	A PixelMapGenINF instance -- should be initialized already.
 	 */
-	public PixelAudioMapper(int w, int h, PixelMapGen gen) {
-		this.w = w;
-		this.h = h;
-		this.len = w * h;
+	public PixelAudioMapper(PixelMapGen gen) {
 		this.generator = gen;
-		this.signalToImageLUT = this.generateSignalToImageLUT();
-		this.generateImageToSignalLUT(signalToImageLUT);
+		this.w = gen.getWidth();
+		this.h = gen.getHeight();
+		this.len = gen.getSize();
+		this.signalToImageLUT = gen.getPixelMap();
+		this.imageToSignalLUT = gen.getSampleMap();
 	}
 
 	
