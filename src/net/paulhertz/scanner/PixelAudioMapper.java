@@ -141,6 +141,10 @@ package net.paulhertz.scanner;
  * from the image. When we call peel or stamp on signal data, length should be equal to w * h for 
  * a given rectangular area of the image.
  * 
+ * Most methods have a unique signature that also indicates how they function. Where there are 
+ * ambiguities, I have renamed the function, as in pluckPixelsAsFloat, pluckSamplesAsInt, 
+ * peelPixelsAsFloat, and peelSamplesAsInt.
+ * 
  *	PLUCK
  *	copy in signal order	fromChannel			Return 		Notes
  *  --------------------------------------------------------------------------------------------------------------------------
@@ -202,7 +206,9 @@ package net.paulhertz.scanner;
  *   shiftLeft()		an array rotation where index values decrease and wrap around at the beginning
  *   shiftRight()		an array rotation where index values increase and wrap around at the end
  *   
- * This have proved useful for animation.
+ * Shifting has proved so useful for animation that I am including it in the class. The shift methods also demonstrate 
+ * how to update the signal and pixel arrays. 
+ * 
  * 
  * OTHER OPEREATIONS
  * 
@@ -315,7 +321,7 @@ public class PixelAudioMapper {
 	 * @param sigLUT
 	 */
 	protected void setSignalToImageLUT(int[] sigLUT) {
-		
+		this.signalToImageLUT = sigLUT;
 	}
 	
 	/** @return the lookup table that maps pixel values in the image to the corresponding entry in the signal. */
@@ -329,7 +335,7 @@ public class PixelAudioMapper {
 	 * @param imgLUT
 	 */
 	protected void setImageToSignalLUT(int[] imgLUT) {
-
+		this.imageToSignalLUT = imgLUT;
 	}
 	
 	/**
