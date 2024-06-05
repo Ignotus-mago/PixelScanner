@@ -277,8 +277,8 @@ public class PixelAudioMapper {
 		this.w = gen.getWidth();
 		this.h = gen.getHeight();
 		this.len = gen.getSize();
-		this.signalToImageLUT = gen.getPixelMap();
-		this.imageToSignalLUT = gen.getSampleMap();
+		this.signalToImageLUT = gen.getPixelMapCopy();
+		this.imageToSignalLUT = gen.getSampleMapCopy();
 	}
 
 	
@@ -354,6 +354,79 @@ public class PixelAudioMapper {
 		}		
 	}
 		
+	
+	//------------- SUBARRAYS -------------//
+	
+	
+	public int[] pluckPixels(int x, int y, int length, ChannelNames fromChannel) {
+		
+	}
+	
+	public float[] pluckPixelsAsFloat(int x, int y, int length, ChannelNames fromChannel) {
+		
+	}
+	
+	public float[] pluckSamples(int pos, int length) {
+		
+	}
+	
+	public int[] pluckSamplesAsInt(int pos, int length) {
+		
+	}
+
+	
+	public void plantPixels(int x, int y, int[] sprout, ChannelNames toChannel) {
+		
+	}
+	
+	public void plantPixels(int x, int y, float[] sprout, ChannelNames toChannel) {
+		
+	}
+	
+	public void plantSamples(int pos, int length, float[] sprout) {
+		
+	}
+	
+	public void plantSamples(int pos, int length, int[] sprout) {
+		
+	}
+
+	
+	public int[] peelPixels(int x, int y, int w, int h) {
+		
+	}
+	
+	public float[] peelPixelsAsFloat(int x, int y, int w, int h) {
+		
+	}
+	
+	public float[] peelSamples(int pos, int length) {
+		
+	}
+	
+	public int[] peelSamplesAsInt(int pos, int length) {
+		
+	}
+	
+
+	public void stampPixels(int x, int y, int w, int h, int[] stamp, ChannelNames toChannel) {
+		
+	}
+	
+	public void stampPixels(int x, int y, int w, int h, float[] stamp, ChannelNames toChannel) {
+		
+	}
+	
+	public void stampSamples(int pos, int length, float[] stamp) {
+		
+	}
+	
+	public void stampSamples(int pos, int length, int[] stamp) {
+		
+	}
+	
+	
+	
 	
 	
 	

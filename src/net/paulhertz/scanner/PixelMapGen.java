@@ -36,7 +36,7 @@ import java.util.Arrays;
  * 	  - PixelMapGen provides methods to copy its resources, which only need to be calculated once, and they can be obtained at application initialization.
  * 	  - We use more memory by replicating LUTs, but in current architectures that is hardly a problem. In any case, we can also call PixelMapGen if we prefer.
  * -- In real-time performance situations, initialing all required resources for the performance up front is desirable, anyhow. 
- * -- One more question: do we want a no-argument constructor for PixelMapGen? (answer tomorrow)
+ * -- One more question: do we want a no-argument constructor for PixelMapGen? 
  * 
  * CONCLUSION
  * 
