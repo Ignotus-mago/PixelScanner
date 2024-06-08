@@ -99,10 +99,14 @@ import java.awt.Color;
  * Note that the same LUT could be used by multiple instances of PixelAudioMapper, as long as it is in effect
  * a static variable. The LUT for a 512 x 512 pixel Hilbert curve can be calculated once and copied to
  * or called by every PixelAudio instance that maps a signal to a 512 x 512 bitmap using a Hilbert curve. 
- * For this reason, we provide an interface, PixelMapGenINF, to implement LUT generation in a separate class.
- * The constructor for a PixelMapGenINF class should accept the width and height values for the PixelAudioMapper
- * instance. A call to the PixelMapGenINF.generate() method will provide a signalToImageLUT which can be used by 
+ * A call to the PixelMapGen.generate() method will provide a signalToImageLUT which can be used by 
  * all PixelAudioMapper instances with the same width and height. 
+ * 
+ * Currently, I am using a PixelMapGen instance as an argument to the PixelAudioMapper constructor. 
+ * First create a PixMapGen instance with the width and height of the image you are addressing. The PixMapGen
+ * instance will generate the LUTs for its particular mapping for you. You can then pass it to the 
+ * PixelAudioMapper constructor, which will initialize its variables from copies of the PixMapGen LUTs. 
+ * Some of the logic behind this process is explained in my notes to the PixMapGen abstract class. 
  * 
  *
  * MAPPING AND TRANSCODING
@@ -631,11 +635,6 @@ public class PixelAudioMapper {
 		return comp;
 	}
 
-	static public final String colorString(int argb) {
-		int[] comp = rgbaComponents(argb);
-		return "color(" + comp[0] + ", " + comp[1] + ", " + comp[2] + ", " + comp[3] + ")";
-	}
-
 	/**
 	 * Returns alpha channel value of a color.
 	 * 
@@ -678,6 +677,15 @@ public class PixelAudioMapper {
 	}
 		
 	
+	/**
+	 * @param argb		an RGB color
+	 * @return			a String equivalent to a Processing color(r, g, b, a) call, such as "color(233, 144, 89, 255)"
+	 */
+	static public final String colorString(int argb) {
+		int[] comp = rgbaComponents(argb);
+		return "color(" + comp[0] + ", " + comp[1] + ", " + comp[2] + ", " + comp[3] + ")";
+	}
+
 	/**
 	 * Extracts a selected channel from an array of rgb values.
 	 * 
@@ -748,8 +756,9 @@ public class PixelAudioMapper {
 	 * channel with a value derived from an audio signal and outputs to an array of RGB pixel values.
 	 * In the HSB color space, values are assumed to be floats in the range (0..1), 
 	 * so the values need to be mapped to the correct ranges for HSB or RGB [0, 255].
-	 * The array int[] rgbPixels gets the new values determined by the floats in buf[], always 
-	 * in the RGB color space.
+	 * The array int[] rgbPixels gets the new values determined by buf[], always in the RGB color space.
+	 * We do some minimal limiting of values derived from buf[], but it is the caller's responsibility 
+	 * to limit them to the range (0..1).
 	 * 
 	 * @param rgbPixels an array of pixel values
 	 * @param buf       an array of floats in the range (-1..1)
@@ -761,6 +770,7 @@ public class PixelAudioMapper {
 		case L: {
 			for (float val : buf) {
 				val = map(val, -1.0f, 1.0f, 0, 1);								// map audio value to (0..1)
+				val = val > 1.0f ? 1.0f : val < 0 ? 0 : val;					// a precaution, keep values within limits
 				int rgb = rgbPixels[i];											// get an RGB pixel value
 				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
 				rgbPixels[i] = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], val);	// and back to RGB with a new brightness component
@@ -771,6 +781,7 @@ public class PixelAudioMapper {
 		case H: {
 			for (float val : buf) {
 				val = map(val, -1.0f, 1.0f, 0, 1);								// map audio value to (0..1)
+				val = val > 1.0f ? 1.0f : val < 0 ? 0 : val;					// a precaution, keep values within limits
 				int rgb = rgbPixels[i];											// get an RGB pixel value
 				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
 				rgbPixels[i] = Color.HSBtoRGB(val, hsbPixel[1], hsbPixel[2]);	// and back to RGB with a new hue component
@@ -781,6 +792,7 @@ public class PixelAudioMapper {
 		case S: {
 			for (float val : buf) {
 				val = map(val, -1.0f, 1.0f, 0, 1);								// map audio value to (0..1)
+				val = val > 1.0f ? 1.0f : val < 0 ? 0 : val;					// a precaution, keep values within limits
 				int rgb = rgbPixels[i];											// get an RGB pixel value
 				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
 				rgbPixels[i] = Color.HSBtoRGB(hsbPixel[0], val, hsbPixel[2]);	// and back to RGB with a new saturation component
@@ -790,45 +802,58 @@ public class PixelAudioMapper {
 		}
 		case R: {
 			for (float val : buf) {
-				int r = Math.round(map(val, -1.0f, 1.0f, 0, 255));
-				r = r > 255 ? 255 : r < 0 ? 0 : r;
-				int rgb = rgbPixels[i];
-				rgbPixels[i] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
+				int r = Math.round(map(val, -1.0f, 1.0f, 0, 255));				// map audio value to [0, 255]
+				r = r > 255 ? 255 : r < 0 ? 0 : r;								// a precaution, keep values within limits
+				int rgb = rgbPixels[i];											// get an RGB pixel value
+				rgbPixels[i] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;		// set new RGB value, change red channel
+				i++;
 			}
 			break;
 		}
 		case G: {
 			for (float val : buf) {
-				int g = Math.round(map(val, -1.0f, 1.0f, 0, 255));
-				g = g > 255 ? 255 : g < 0 ? 0 : g;
-				int rgb = rgbPixels[i];
-				rgbPixels[i] = 255 << 24 | (rgb << 16) & 0xFF | (g & 0xFF) << 8 | rgb & 0xFF;
+				int g = Math.round(map(val, -1.0f, 1.0f, 0, 255));				// map audio value to [0, 255]
+				g = g > 255 ? 255 : g < 0 ? 0 : g;								// a precaution, keep values within limits
+				int rgb = rgbPixels[i];											// get an RGB pixel value
+				rgbPixels[i] = 255 << 24 | (rgb << 16) & 0xFF | (g & 0xFF) << 8 | rgb & 0xFF;		// set new RGB value, change green channel
+				i++;
 			}
 			break;
 		}
 		case B: {
 			for (float val : buf) {
-
+				int b = Math.round(map(val, -1.0f, 1.0f, 0, 255));				// map audio value to [0, 255]
+				b = b > 255 ? 255 : b < 0 ? 0 : b;								// a precaution, keep values within limits
+				int rgb = rgbPixels[i];											// get an RGB pixel value
+				rgbPixels[i] = 255 << 24 | (rgb << 16) & 0xFF | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF;		// set new RGB value, change blue channel
+				i++;
 			}
 			break;
 		}
 		case A: {
 			for (float val : buf) {
-
+				int a = Math.round(map(val, -1.0f, 1.0f, 0, 255));				// map audio value to [0, 255]
+				a = a > 255 ? 255 : a < 0 ? 0 : a;								// a precaution, keep values within limits
+				int rgb = rgbPixels[i];											// get an RGB pixel value
+				rgbPixels[i] = a << 24 | (rgb << 16) & 0xFF | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;		// set new RGB value, alpha channel
+				i++;
 			}
 			break;
 		}
 		case ALL: {
 			for (float val : buf) {
-
+				int v = Math.round(map(val, -1.0f, 1.0f, 0, 255));				// map audio value to [0, 255]
+				v = v > 255 ? 255 : v < 0 ? 0 : v;								// a precaution, keep values within limits
+				rgbPixels[i] = 255 << 24 | v << 16 | v << 8 | v;		        // set new RGB value, all channels
+				i++;
 			}
 			break;
 		}
 		}  // end switch
 	}	
 	
-	// -------- HSB <---> RGB -------- //
 	
+	// -------- HSB <---> RGB -------- //
 	
 	/**
 	 * @param rgb	The RGB color from which we will obtain the hue component in the HSB color model. 
