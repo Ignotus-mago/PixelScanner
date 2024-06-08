@@ -3,6 +3,8 @@
  */
 package net.paulhertz.scanner;
 
+import java.awt.Color;
+
 
 /**
  * PixelAudioMapper is the parent class for child classes that map a 1D "signal" array of 
@@ -258,10 +260,12 @@ public class PixelAudioMapper {
 	protected int imageToSignalLUT[];
 	/** PixelMapGenINF instance to generate LUTs */
 	protected PixelMapGen generator;
+	/** container for HSB pixel values */
+	private float[] hsbPixel = new float[3];
 
 	/** List of available color channels, "L" for lightness, since "B" for brightness is taken */
 	public static enum ChannelNames {
-		R, G, B, H, S, L, A, RGB, RGBA;
+		R, G, B, H, S, L, A, ALL;
 	}
 
 	
@@ -355,9 +359,82 @@ public class PixelAudioMapper {
 	}
 		
 	
+	//------------- MAPPING -------------//
+
+	
+	 public void mapSigToImg() {
+		 // map signal values to the image: img[i] = transcode(sig[imgLUT[i]]);
+	 }
+	 
+	 public void mapSigToImg(ChannelNames toChannel) {
+		 // map signal values to the image: img[i] = transcode(sig[imgLUT[i]]);
+	 }
+	 
+	 public void mapImgToSig() {
+		 // map image values to the signal: sig[i] = transcode(img[sigLUT[i]]);
+	 }
+
+	 public void mapImgToSig(ChannelNames fromChannel) {
+		 // map image values to the signal: sig[i] = transcode(img[sigLUT[i]]);
+	 }
+
+	 public void writeImgToSig() {
+		 // write image values directly to the signal: sig[i] = transcode(img[i]);
+	 }
+	 
+	 public void writeImgToSig(ChannelNames fromChannel) {
+		 // write image values directly to the signal: sig[i] = transcode(img[i]);
+	 }
+	 
+	 public void writeSigToImg() {
+		 // write signal values directly to the image: img[i] = transcode(sig[i]);	
+	 }
+
+	 public void writeSigToImg(ChannelNames toChannel) {
+		 // write signal values directly to the image: img[i] = transcode(sig[i]);	
+	 }
+	
+	
+	
+	//------------- TRANSCODING -------------//
+	 
+	 
+	 /**
+	 * Converts a float value in the range (-1.0, 1.0) to an int value in the range [0..255].
+	 * 
+	 * @param val	a float value in the range (-1.0, 1.0)
+	 * @return		an int mapped to the range [0..255]
+	 */
+	public int transcode(float val) {
+		 float vout = map(val, -1.0f, 1.0f, 0, 255);
+		 return Math.round(vout);
+	 }
+	 
+	 /**
+	 * Converts an int value in the range [0..255] to a float value in the range (-1.0, 1.0).
+	 * 
+	 * @param val	an int int he range [0..255]
+	 * @return		a float mapped to the range (-1.0, 1.0)
+	 */
+	public float transcode(int val) {
+		 float vout = map(val, 0, 255, -1.0f, 1.0f);
+		 return vout;
+	 }
+
+	 
 	//------------- SUBARRAYS -------------//
 	
 	
+	/**
+	 * Starting at image coordinates (x, y), reads values from channel fromChannel following the signal path
+	 * and returns them as an array of ints.
+	 * 
+	 * @param x
+	 * @param y
+	 * @param length
+	 * @param fromChannel
+	 * @return
+	 */
 	public int[] pluckPixels(int x, int y, int length, ChannelNames fromChannel) {
 		
 	}
@@ -426,44 +503,361 @@ public class PixelAudioMapper {
 	}
 	
 	
+	//------------- UTILITY -------------//
 	
 	
+	// lerp and map
+	
+	/**
+	 * Good old lerp.
+	 * @param a		first bound, typically a minimum value
+	 * @param b		second bound, typically a maximum value
+	 * @param f		scaling value, from 0..1 to interpolate between a and b, but can go over or under
+	 * @return		a value between a and b, scaled by f (if 0 <= f >= 1).
+	 */
+	static public final float lerp(float a, float b, float f) {
+	    return a + f * (b - a);
+	}
+	
+	/**
+	 * Processing's map method, but with no error checking
+	 * @param value
+	 * @param start1
+	 * @param stop1
+	 * @param start2
+	 * @param stop2
+	 * @return
+	 */
+	static public final float map(float value, float start1, float stop1, float start2, float stop2) {
+		return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
+	}
+
+	
+	// array rotation
+	
+	/**
+	 * Rotates an array of ints left by d values. Uses efficient "Three Rotation" algorithm.
+	 * 
+	 * @param arr array of ints to rotate
+	 * @param d   number of elements to shift
+	 */
+	static public final void rotateLeft(int[] arr, int d) {
+		d = d % arr.length;
+		reverseArray(arr, 0, d - 1);
+		reverseArray(arr, d, arr.length - 1);
+		reverseArray(arr, 0, arr.length - 1);
+	}
+
+	/**
+	 * Rotates an array of floats left by d values. Uses efficient "Three Rotation" algorithm.
+	 * 
+	 * @param arr array of floats to rotate
+	 * @param d   number of elements to shift
+	 */
+	static public final void rotateLeft(float[] arr, int d) {
+		d = d % arr.length;
+		reverseArray(arr, 0, d - 1);
+		reverseArray(arr, d, arr.length - 1);
+		reverseArray(arr, 0, arr.length - 1);
+	}
+
+	/**
+	 * Reverses an arbitrary subset of an array of ints.
+	 * 
+	 * @param arr array to modify
+	 * @param l   left bound of subset to reverse
+	 * @param r   right bound of subset to reverse
+	 */
+	static public final void reverseArray(int[] arr, int l, int r) {
+		int temp;
+		while (l < r) {
+			temp = arr[l];
+			arr[l] = arr[r];
+			arr[r] = temp;
+			l++;
+			r--;
+		}
+	}	
+	
+	/**
+	 * Reverses an arbitrary subset of an array of floats.
+	 * 
+	 * @param arr array to modify
+	 * @param l   left bound of subset to reverse
+	 * @param r   right bound of subset to reverse
+	 */
+	static public final void reverseArray(float[] arr, int l, int r) {
+		float temp;
+		while (l < r) {
+			temp = arr[l];
+			arr[l] = arr[r];
+			arr[r] = temp;
+			l++;
+			r--;
+		}
+	}	
 	
 	
-//	/**
-//	 * Writes values from an array of pixel values to an array of audio samples using imageToSignalLUT 
-//	 * to map array positions. Formats values as required by the implementation. In this library, 
-//	 * we typically map 24-bit RGB pixel values to floating point audio values between -1.0 and 1.0.
-//	 * 
-//	 * @param pix		the pixel array from the mapped image
-//	 * @param sig		the signal array, companion to the mapped image
-//	 */
-//	abstract void mapToSignal(int[] pix, float[] sig);
-//
-//	/**
-//	 * Writes values from an array of floating point numbers ("audio") to an image's pixel array
-//	 * using signalToImageLUT to map array positions. The floating point number are typically in the
-//	 * range -1.0 to 1.0, and should be mapped to the interval 0 to 255. Example implementations
-//	 * usually use the Lightness channel in the HSL color space, but there are many other possibilities.
-//	 * 
-//	 * @param sig		the signal array, companion to the mapped image
-//	 * @param pix		the pixel array from the mapped image
-//	 */
-//	abstract void mapToImage(float[] sig, int[] pix);
-//	
-//	/**
-//	 * shuffle the pixels in the image using the signalToImageLUT
-//	 * @param     img
-//	 * @return    a new PImage with pixels from img rearranged using signalToImageLUT
-//	 */
-//	abstract PImage remapImage(PImage img);
-//	
-//	/**
-//	 * shuffle the pixels in the signal using the imageToSignalLUT
-//	 * @param     sig
-//	 * @return    a new array with values from sig rearranged using imageToSignalLUT
-//	 */
-//	abstract float[] remapSignal(float sig);
+	//------------- COLOR UTILITIES -------------//
+	
+	/**
+	 * Breaks a Processing color into R, G and B values in an array.
+	 * 
+	 * @param rgb a Processing color as a 32-bit integer
+	 * @return an array of integers in the intRange 0..255 for 3 primary color
+	 *         components: {R, G, B}
+	 */
+	static public final int[] rgbComponents(int rgb) {
+		int[] comp = new int[3];
+		comp[0] = (rgb >> 16) & 0xFF; // Faster way of getting red(rgb)
+		comp[1] = (rgb >> 8) & 0xFF; // Faster way of getting green(rgb)
+		comp[2] = rgb & 0xFF; // Faster way of getting blue(rgb)
+		return comp;
+	}
+
+	/**
+	 * Breaks a Processing color into R, G, B and A values in an array.
+	 * 
+	 * @param argb a Processing color as a 32-bit integer
+	 * @return an array of integers in the intRange 0..255 for 3 primary color
+	 *         components: {R, G, B} plus alpha
+	 */
+	static public final int[] rgbaComponents(int argb) {
+		int[] comp = new int[4];
+		comp[0] = (argb >> 16) & 0xFF; // Faster way of getting red(argb)
+		comp[1] = (argb >> 8) & 0xFF; // Faster way of getting green(argb)
+		comp[2] = argb & 0xFF; // Faster way of getting blue(argb)
+		comp[3] = argb >> 24; // alpha component
+		return comp;
+	}
+
+	static public final String colorString(int argb) {
+		int[] comp = rgbaComponents(argb);
+		return "color(" + comp[0] + ", " + comp[1] + ", " + comp[2] + ", " + comp[3] + ")";
+	}
+
+	/**
+	 * Returns alpha channel value of a color.
+	 * 
+	 * @param argb a Processing color as a 32-bit integer
+	 * @return an int for alpha channel
+	 */
+	static public final int alphaComponent(int argb) {
+		return (argb >> 24);
+	}
+
+	// take the alpha channel from rgba and apply it to rgb
+	static public final int applyAlpha(int rgb, int rgba) {
+		return (rgba >> 24) << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | (rgb & 0xFF);
+	}
+
+	/**
+	 * Creates a Processing ARGB color from r, g, b, and alpha channel values. Note
+	 * the order of arguments, the same as the Processing color(value1, value2,
+	 * value3, alpha) method.
+	 * 
+	 * @param r red component 0..255
+	 * @param g green component 0..255
+	 * @param b blue component 0..255
+	 * @param a alpha component 0..255
+	 * @return a 32-bit integer with bytes in Processing format ARGB.
+	 */
+	static public final int composeColor(int r, int g, int b, int a) {
+		return a << 24 | r << 16 | g << 8 | b;
+	}
+
+	/**
+	 * Creates a Processing ARGB color from r, g, b, values in an array.
+	 * 
+	 * @param comp array of 3 integers in range 0..255, for red, green and blue
+	 *             components of color alpha value is assumed to be 255
+	 * @return a 32-bit integer with bytes in Processing format ARGB.
+	 */
+	static public final int composeColor(int[] comp) {
+		return 255 << 24 | comp[0] << 16 | comp[1] << 8 | comp[2];
+	}
+		
+	
+	/**
+	 * Extracts a selected channel from an array of rgb values.
+	 * 
+	 * From https://docs.oracle.com/javase/8/docs/api/, java.awt.Color, entry for getHSBColor():
+	 * 
+	 * The s and b components should be floating-point values between zero and one (numbers in the range 0.0-1.0). 
+	 * The h component can be any floating-point number. The floor of this number is subtracted from it to create 
+	 * a fraction between 0 and 1. This fractional number is then multiplied by 360 to produce the hue angle in 
+	 * the HSB color model.
+	 * 
+	 * @param rgbPixels rgb values in an array of int
+	 * @param chan      the channel to extract, a value from the ChannelNames enum
+	 * @return          the extracted channel values as an array of floats
+	 */
+	public float[] pullChannel(int[] rgbPixels, ChannelNames chan) {
+	  // convert sample channel to float array buf
+	  float[] buf = new float[rgbPixels.length];
+	  int i = 0;
+	  switch (chan) {
+	  case L: 
+	    {
+	      for (int rgb : rgbPixels) buf[i++] = brightness(rgb);
+	      break;
+	    }
+	  case H: 
+	    {
+	      for (int rgb : rgbPixels) buf[i++] = hue(rgb);
+	      break;
+	    }
+	  case S: 
+	    {
+	      for (int rgb : rgbPixels) buf[i++] = saturation(rgb);
+	      break;
+	    }
+	  case R: 
+	    {
+	      for (int rgb : rgbPixels)  buf[i++] = (rgb >> 16) & 0xFF;
+	      break;
+	    }
+	  case G: 
+	    {
+	      for (int rgb : rgbPixels) buf[i++] = (rgb >> 8) & 0xFF;
+	      break;
+	    }
+	  case B: 
+	    {
+	      for (int rgb : rgbPixels) buf[i++] = rgb & 0xFF;
+	      break;
+	    }
+	  case A: 
+	    {
+	      for (int rgb : rgbPixels) buf[i++] = (rgb >> 24) & 0xFF;
+	      break;
+	    }
+	  case ALL: 
+	    {
+	      for (int rgb : rgbPixels) buf[i++] = rgb;
+	      break;
+	    }
+	  }
+	  return buf;
+	}
+	
+	
+	/**
+	 * Replaces a specified channel in an array of pixel values, rgbPixels, with a value derived
+	 * from an array of floats, buf, that represent audio samples. In effect, replaces an RGB or HSB
+	 * channel with a value derived from an audio signal and outputs to an array of RGB pixel values.
+	 * In the HSB color space, values are assumed to be floats in the range (0..1), 
+	 * so the values need to be mapped to the correct ranges for HSB or RGB [0, 255].
+	 * The array int[] rgbPixels gets the new values determined by the floats in buf[], always 
+	 * in the RGB color space.
+	 * 
+	 * @param rgbPixels an array of pixel values
+	 * @param buf       an array of floats in the range (-1..1)
+	 * @param chan      the channel to replace
+	 */
+	public void pushChannel(int[] rgbPixels, float buf[], ChannelNames chan) {
+		int i = 0;
+		switch (chan) {
+		case L: {
+			for (float val : buf) {
+				val = map(val, -1.0f, 1.0f, 0, 1);								// map audio value to (0..1)
+				int rgb = rgbPixels[i];											// get an RGB pixel value
+				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
+				rgbPixels[i] = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], val);	// and back to RGB with a new brightness component
+				i++;
+			}
+			break;
+		}
+		case H: {
+			for (float val : buf) {
+				val = map(val, -1.0f, 1.0f, 0, 1);								// map audio value to (0..1)
+				int rgb = rgbPixels[i];											// get an RGB pixel value
+				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
+				rgbPixels[i] = Color.HSBtoRGB(val, hsbPixel[1], hsbPixel[2]);	// and back to RGB with a new hue component
+				i++;
+			}
+			break;
+		}
+		case S: {
+			for (float val : buf) {
+				val = map(val, -1.0f, 1.0f, 0, 1);								// map audio value to (0..1)
+				int rgb = rgbPixels[i];											// get an RGB pixel value
+				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
+				rgbPixels[i] = Color.HSBtoRGB(hsbPixel[0], val, hsbPixel[2]);	// and back to RGB with a new saturation component
+				i++;
+			}
+			break;
+		}
+		case R: {
+			for (float val : buf) {
+				int r = Math.round(map(val, -1.0f, 1.0f, 0, 255));
+				r = r > 255 ? 255 : r < 0 ? 0 : r;
+				int rgb = rgbPixels[i];
+				rgbPixels[i] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
+			}
+			break;
+		}
+		case G: {
+			for (float val : buf) {
+				int g = Math.round(map(val, -1.0f, 1.0f, 0, 255));
+				g = g > 255 ? 255 : g < 0 ? 0 : g;
+				int rgb = rgbPixels[i];
+				rgbPixels[i] = 255 << 24 | (rgb << 16) & 0xFF | (g & 0xFF) << 8 | rgb & 0xFF;
+			}
+			break;
+		}
+		case B: {
+			for (float val : buf) {
+
+			}
+			break;
+		}
+		case A: {
+			for (float val : buf) {
+
+			}
+			break;
+		}
+		case ALL: {
+			for (float val : buf) {
+
+			}
+			break;
+		}
+		}  // end switch
+	}	
+	
+	// -------- HSB <---> RGB -------- //
+	
+	
+	/**
+	 * @param rgb	The RGB color from which we will obtain the hue component in the HSB color model. 
+	 * @return		A floating point number in the range (0..1) that can be multiplied by 360 to get the hue angle.
+	 */
+	public float hue(int rgb) {
+		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+		return hsbPixel[0];
+	}
+	
+	/**
+	 * @param rgb	The RGB color from which we will obtain the hue component in the HSB color model. 
+	 * @return		A floating point number in the range (0..1) representing the saturation component of an HSB color.
+	 */
+	public float saturation(int rgb) {
+		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+		return hsbPixel[1];
+	}
+	
+	/**
+	 * @param rgb	The RGB color from which we will obtain the hue component in the HSB color model. 
+	 * @return		A floating point number in the range (0..1) representing the brightness component of an HSB color.
+	 */
+	public float brightness(int rgb) {
+		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+		return hsbPixel[2];
+	}
+	
+	
 	
 }
 

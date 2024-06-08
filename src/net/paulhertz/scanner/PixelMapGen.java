@@ -36,13 +36,20 @@ import java.util.Arrays;
  * 	  - PixelMapGen provides methods to copy its resources, which only need to be calculated once, and they can be obtained at application initialization.
  * 	  - We use more memory by replicating LUTs, but in current architectures that is hardly a problem. In any case, we can also call PixelMapGen if we prefer.
  * -- In real-time performance situations, initialing all required resources for the performance up front is desirable, anyhow. 
- * -- One more question: do we want a no-argument constructor for PixelMapGen? 
+ * -- Another question: do we want a no-argument constructor for PixelMapGen? 
+ * 	  - A constructor requiring width and height seems really useful if we're handling bitmaps as one of our arrays.
+ * 	  - Generality isn't really lost if a bitmap can have a height (or width) of 1, making it effectively 1D and of any cardinality we want. 
+ * 	  - Clearly this doesn't work for every generator: A Hilbert curve, for example, has some well-defined restrictions
+ *    - A Hilbert curve could be initialized with a "depth" argument, so there's an argument for having a one-argument constructor
+ *    - A no-arg constructor allows us to instantiate a PixelMapGen without setting any of its properties. This is potentially a source of problems.
+ *    - I also can't see any advantages to the no-arg constructor. Delaying initialization is not an advantage for real-time performance. Do it all up front.
+ *     
  * 
  * CONCLUSION
  * 
  * Create a PixelMapGen instance with assigned width and height, and LUTs created by the generate() processes. 
  * Initialize a PixelAudioMapper instance with the PixelMapGen instance, using copies of PixelMapGen resources.
- * Decouple PixelAudioMapper instances from PixelMapGen in all later method calls. 
+ * In this way, decouple PixelAudioMapper instances from PixelMapGen in all later method calls. 
  * But don't enforce this usage pattern with class structure, just make it the recommended practice (and see where that gets you).
  *    
  * 

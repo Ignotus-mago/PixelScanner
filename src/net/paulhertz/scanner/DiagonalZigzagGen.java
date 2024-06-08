@@ -9,7 +9,7 @@ public class DiagonalZigzagGen extends PixelMapGen {
 	 * The description variable should shadow the abstract class variable with a description specific to the child class. 
 	 */
 	public final static String description = "DiagonalZigzagGen generates a diagonal zigzag map starting at (0,0). Moves first to (0,1) then proceeeds diagonally from edge to edge. "
-										   + "Any width and height greater than 2 are valid for the constructor DiagonalZigzagGen(int width, int height).";
+										   + "Any width and height greater than 0 are valid for the constructor DiagonalZigzagGen(int width, int height).";
 
 	
 	
@@ -29,8 +29,8 @@ public class DiagonalZigzagGen extends PixelMapGen {
 	@Override
 	public boolean validate(int width, int height) {
 		// any width and height > 2 will work
-		if (width < 2 || height < 2) {
-			System.out.println("width and height must be greater than 1.");
+		if (width < 1 || height < 1) {
+			System.out.println("width and height must be greater than 0.");
 			return false;
 		}
 		return true;
