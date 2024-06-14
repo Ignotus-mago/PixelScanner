@@ -4,6 +4,7 @@
 package net.paulhertz.scanner;
 
 import java.awt.Color;
+import java.util.Arrays;
 
 
 /**
@@ -252,9 +253,9 @@ import java.awt.Color;
 public class PixelAudioMapper {
 	// necessary instance variables
 	/** image width */
-	protected int w;
+	protected int width;
 	/** image height */
-	protected int h;
+	protected int height;
 	/** pixel array and signal array length, equal to w * h */
 	protected int len;
 	/** Lookup table to go from the signal to the image: index values over {0..(h * w - 1)} 
@@ -277,14 +278,14 @@ public class PixelAudioMapper {
 
 	/**
 	 * Basic constructor for PixelAudio, sets up all variables. 
-	 * @param w		width
-	 * @param h		height
+	 * @param width		width
+	 * @param height		height
 	 * @param gen 	A PixelMapGenINF instance -- should be initialized already.
 	 */
 	public PixelAudioMapper(PixelMapGen gen) {
 		this.generator = gen;
-		this.w = gen.getWidth();
-		this.h = gen.getHeight();
+		this.width = gen.getWidth();
+		this.height = gen.getHeight();
 		this.len = gen.getSize();
 		this.signalToImageLUT = gen.getPixelMapCopy();
 		this.imageToSignalLUT = gen.getSampleMapCopy();
@@ -297,12 +298,12 @@ public class PixelAudioMapper {
 	
 	/** @return the width of the image */
 	public int getWidth() {
-		return this.w;
+		return this.width;
 	}
 	
 	/** @return the height of the image */
 	public int getHeight() {
-		return this.h;
+		return this.height;
 	}
 	
 	/** @return the length of the signal array (== length of image pixel array and the LUTs) */
@@ -358,7 +359,7 @@ public class PixelAudioMapper {
 	 * Called when signalToImageLUT has been initialized to generate imageToSignalLUT
 	 */
 	public void generateImageToSignalLUT(int[] sigLUT) {
-		for (int i = 0; i < w * h - 1; i++) {
+		for (int i = 0; i < width * height - 1; i++) {
 			this.imageToSignalLUT[sigLUT[i]] = i;
 		}		
 	}
@@ -366,7 +367,8 @@ public class PixelAudioMapper {
 	
 	//------------- MAPPING -------------//
 
-	// TODO rewrite method signatures to reflect SOURCE, TARGET, ARGS ordering.  Names and calls won't change, but change the documentation, too. 
+	// TODO rewrite method signatures using SOURCE, TARGET, ARGS or SOURCE, LUT, TARGET, ARGS ordering.  
+	// Names and calls won't change, but change the documentation, too. 
 	// E.g., mapImgToSig(int[] img, float[] sig);
 	
 	/**
@@ -378,7 +380,7 @@ public class PixelAudioMapper {
 	 * @param img an array of RGB pixel values
 	 */
 	public void mapSigToImg(float[] sig, int[] img) {
-		this.pushChannel(sig, img, imageToSignalLUT, ChannelNames.ALL);			// calls our utility method's grayscale conversion
+		this.pushAudioPixel(sig, img, imageToSignalLUT, ChannelNames.ALL);			// calls our utility method's grayscale conversion
 	}
 	 
 	/**
@@ -391,7 +393,7 @@ public class PixelAudioMapper {
 	 * @param toChannel		the channel to write transcoded values to
 	 */
 	public void mapSigToImg(float[] sig, int[] img, ChannelNames toChannel) {
-		this.pushChannel(sig, img, imageToSignalLUT, toChannel);				// call our utility method with toChannel
+		this.pushAudioPixel(sig, img, imageToSignalLUT, toChannel);				// call our utility method with toChannel
 	}
 	 
 	/**
@@ -404,7 +406,7 @@ public class PixelAudioMapper {
 	 * @param img			an array of RGB pixel values
 	 */
 	public void mapImgToSig(int[] img, float[] sig) {
-		this.getPixelAudio(img, imageToSignalLUT, sig, ChannelNames.ALL);
+		this.pullPixelAudio(img, imageToSignalLUT, sig, ChannelNames.ALL);
 	 }
 
 	/**
@@ -417,7 +419,7 @@ public class PixelAudioMapper {
 	 * @param fromChannel	the color channel to get a value from
 	 */
 	public void mapImgToSig(int[] img, float[] sig, ChannelNames fromChannel) {
-		this.getPixelAudio(img, imageToSignalLUT, sig, fromChannel);
+		this.pullPixelAudio(img, imageToSignalLUT, sig, fromChannel);
 	 }
 
 	/**
@@ -428,7 +430,7 @@ public class PixelAudioMapper {
 	 * @param sig		an array of audio samples in the range (-1.0..1.0), target
 	 */
 	public void writeImgToSig(int[] img, float[] sig) {
-		this.getPixelAudio(img, sig, ChannelNames.ALL);
+		this.pullPixelAudio(img, sig, ChannelNames.ALL);
 	 }
 	 
 	/**
@@ -437,7 +439,7 @@ public class PixelAudioMapper {
 	 * @param fromChannel	channel in RGB or HSB color space, from ChannelNames enum
 	 */
 	public void writeImgToSig(int[] img, float[] sig, ChannelNames fromChannel) {
-		 this.getPixelAudio(img, sig, fromChannel);
+		 this.pullPixelAudio(img, sig, fromChannel);
 	 }
 	 
 	/**
@@ -445,7 +447,7 @@ public class PixelAudioMapper {
 	 * @param img		an array of RGB pixel values, target
 	 */
 	public void writeSigToImg(float[] sig, int[] img) {
-		 this.pushChannel(sig, img, ChannelNames.ALL);
+		 this.pushAudioPixel(sig, img, ChannelNames.ALL);
 	 }
 
 	 /**
@@ -454,13 +456,12 @@ public class PixelAudioMapper {
 	 * @param toChannel		channel in RGB or HSB color space, from ChannelNames enum
 	 */
 	public void writeSigToImg(float[] sig, int[] img, ChannelNames toChannel) {
-		 this.pushChannel(sig, img, toChannel);
+		 this.pushAudioPixel(sig, img, toChannel);
 	 }
 	
 	
 	
 	//------------- TRANSCODING -------------//
-	 
 	 
 	 /**
 	 * Converts a float value in the range (-1.0, 1.0) to an int value in the range [0..255].
@@ -487,22 +488,30 @@ public class PixelAudioMapper {
 	 
 	//------------- SUBARRAYS -------------//
 	
-	
 	/**
 	 * Starting at image coordinates (x, y), reads values from channel fromChannel following the signal path
 	 * and returns them as an array of ints.
 	 * 
-	 * @param x
-	 * @param y
-	 * @param length
-	 * @param fromChannel
-	 * @return
+	 * @param img			an array of RGB pixel values, typically from the bitmap image you are using with PixelAudioMapper
+	 * @param x				x coordinate of a point in the bitmap image from which img is derived
+	 * @param y				y coordinate of a point in the bitmap image from which img is derived
+	 * @param length		length of the subarray to pluck from img
+	 * @param fromChannel	the channel to extract from the pixel values in img
+	 * @return				a new array with the requested pixel values in signal order
 	 */
-	public int[] pluckPixels(int x, int y, int length, ChannelNames fromChannel) {
+	public int[] pluckPixels(int[] img, int x, int y, int length, ChannelNames fromChannel) {
+		int pos = x + y * this.width;
+		int[] petal = new int[length];
 		
+		for (int i = pos; i < pos + length; i++) {
+			int rgb = img[this.imageToSignalLUT[i]];
+			petal[i] = rgb;
+		}
+		
+		return petal;
 	}
 	
-	public float[] pluckPixelsAsFloat(int x, int y, int length, ChannelNames fromChannel) {
+	public float[] pluckPixelsAsAudio(int x, int y, int length, ChannelNames fromChannel) {
 		
 	}
 	
@@ -510,7 +519,7 @@ public class PixelAudioMapper {
 		
 	}
 	
-	public int[] pluckSamplesAsInt(int pos, int length) {
+	public int[] pluckSamplesAsRGB(int pos, int length) {
 		
 	}
 
@@ -536,7 +545,7 @@ public class PixelAudioMapper {
 		
 	}
 	
-	public float[] peelPixelsAsFloat(int x, int y, int w, int h) {
+	public float[] peelPixelsAsAudio(int x, int y, int w, int h) {
 		
 	}
 	
@@ -544,7 +553,7 @@ public class PixelAudioMapper {
 		
 	}
 	
-	public int[] peelSamplesAsInt(int pos, int length) {
+	public int[] peelSamplesAsRGB(int pos, int length) {
 		
 	}
 	
@@ -773,6 +782,8 @@ public class PixelAudioMapper {
 	}
 	
 	
+	// ------------- AUDIO <---> IMAGE ------------- //
+	
 	/**
 	 * Converts a pixel channel value to an audio sample value, mapping the result to (-1.0..1.0).
 	 * 
@@ -780,7 +791,7 @@ public class PixelAudioMapper {
 	 * @param chan		channel to extract from the RGB pixel value
 	 * @return
 	 */
-	public float getPixelAudio(int rgb, ChannelNames chan) {
+	public float pullPixelAudio(int rgb, ChannelNames chan) {
 		float sample = 0;
 		switch (chan) {
 		case L: {
@@ -831,7 +842,7 @@ public class PixelAudioMapper {
 	 * 						Will be initialized and returned if null.  
 	 * @return              a array of floats mapped to the audio range, identical to samples
 	 */
-     public float[] getPixelAudio(int[] rgbPixels, float[] samples, ChannelNames chan) {
+     public float[] pullPixelAudio(int[] rgbPixels, float[] samples, ChannelNames chan) {
     	if (samples == null) {
     		samples = new float[rgbPixels.length];
     	}
@@ -893,6 +904,7 @@ public class PixelAudioMapper {
 
      /**
 	 * Converts a pixel channel value to an audio sample value, mapping the result to (-1.0..1.0).
+	 * A lookup table is used to redirect the indexing of the pixel values.
 	 * 
 	 * @param rgbPixels		an array of RGB pixel values
 	 * @param lut			a lookup table for redirecting rgbPixels indexing, typically imageToSignalLUT
@@ -901,7 +913,7 @@ public class PixelAudioMapper {
 	 * 						Will be initialized and returned if null.  
 	 * @return              a array of floats mapped to the audio range, identical to samples
 	 */
-     public float[] getPixelAudio(int[] rgbPixels, int[] lut, float[] samples, ChannelNames chan) {
+     public float[] pullPixelAudio(int[] rgbPixels, int[] lut, float[] samples, ChannelNames chan) {
     	if (samples == null) {
     		samples = new float[rgbPixels.length];
     	}
@@ -979,7 +991,7 @@ public class PixelAudioMapper {
 	 * @param chan      the channel to extract, a value from the ChannelNames enum
 	 * @return          the extracted channel values as an array of floats
 	 */
-	public float[] pullChannel(int[] rgbPixels, ChannelNames chan) {
+	public float[] pullRawChannel(int[] rgbPixels, ChannelNames chan) {
 	  // convert sample channel to float array buf
 	  float[] buf = new float[rgbPixels.length];
 	  int i = 0;
@@ -1020,7 +1032,64 @@ public class PixelAudioMapper {
 	  return buf;
 	}
 	
-	
+
+	public int pushAudioPixel(float sample, int rgb, ChannelNames chan) {
+		switch (chan) {
+		case L: {
+			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+			sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);
+			Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+			rgb = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], sample);
+			break;
+		}
+		case H: {
+			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+			sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);
+			Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+			rgb = Color.HSBtoRGB(sample, hsbPixel[1], hsbPixel[2]);
+			break;
+		}
+		case S: {
+			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+			sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);
+			Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+			rgb = Color.HSBtoRGB(hsbPixel[0], sample, hsbPixel[2]);
+			break;
+		}
+		case R: {
+			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+			int r = Math.round(map(sample, -1.0f, 1.0f, 0, 255));	
+			rgb = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;	
+			break;
+		}
+		case G: {
+			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+			int g = Math.round(map(sample, -1.0f, 1.0f, 0, 255));	
+			rgb = 255 << 24 | (rgb << 16) & 0xFF | (g & 0xFF) << 8 | rgb & 0xFF;
+			break;
+		}
+		case B: {
+			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+			int b = Math.round(map(sample, -1.0f, 1.0f, 0, 255));
+			rgb = 255 << 24 | (rgb << 16) & 0xFF | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF;
+			break;
+		}
+		case A: {
+			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+			int a = Math.round(map(sample, -1.0f, 1.0f, 0, 255));	
+			rgb = rgb = a << 24 | (rgb << 16) & 0xFF | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
+			break;
+		}
+		case ALL: {
+			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+			int v = Math.round(map(sample, -1.0f, 1.0f, 0, 255));
+			rgb = 255 << 24 | v << 16 | v << 8 | v;
+			break;
+		}
+		}
+		return rgb;
+	}	
+
 	/**
 	 * Replaces a specified channel in an array of pixel values, rgbPixels, with a value derived
 	 * from an array of floats, buf, that represent audio samples. Upon completion, the pixel array 
@@ -1036,8 +1105,14 @@ public class PixelAudioMapper {
 	 * @param rgbPixels an array of pixel values
 	 * @param buf       an array of floats in the range (-1..1)
 	 * @param chan      the channel to replace
+	 * @return			rgbPixels with new values
 	 */
-	public void pushChannel(float buf[], int[] rgbPixels, ChannelNames chan) {
+	public int[] pushAudioPixel(float buf[], int[] rgbPixels, ChannelNames chan) {
+		// it's unlikely that this will happen, but if rgbPixels is null, create an array and fill it with middle gray color
+		if (rgbPixels == null) {
+			rgbPixels = new int[buf.length];
+			Arrays.fill(rgbPixels, PixelAudioMapper.composeColor(127, 127, 127));
+		}
 		switch (chan) {
 		case L: {
 			for (int i = 0; i < rgbPixels.length; i++) {
@@ -1122,6 +1197,7 @@ public class PixelAudioMapper {
 			break;
 		}
 		}  // end switch
+		return rgbPixels;
 	}	
 	
 	/**
@@ -1143,8 +1219,14 @@ public class PixelAudioMapper {
 	 * @param buf       an array of floats in the range (-1..1)
 	 * @param lut		a lookup table to redirect the indexing of the buf, typically imageToPixelsLUT
 	 * @param chan      the channel to replace
+	 * @return			rgbPixels with new values
 	 */
-	public void pushChannel(float buf[], int[] rgbPixels, int[] lut, ChannelNames chan) {
+	public int[] pushAudioPixel(float buf[], int[] rgbPixels, int[] lut, ChannelNames chan) {
+		// it's unlikely that this will happen, but if rgbPixels is null, create an array and fill it with middle gray color
+		if (rgbPixels == null) {
+			rgbPixels = new int[buf.length];
+			Arrays.fill(rgbPixels, PixelAudioMapper.composeColor(127, 127, 127));
+		}
 		switch (chan) {
 		case L: {
 			for (int i = 0; i < rgbPixels.length; i++) {
@@ -1229,6 +1311,7 @@ public class PixelAudioMapper {
 			break;
 		}
 		}  // end switch
+		return rgbPixels;
 	}	
 	
 	
