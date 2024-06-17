@@ -487,6 +487,16 @@ public class PixelAudioMapper {
 
 	 
 	//------------- SUBARRAYS -------------//
+	/*
+	 * In each case, a source subarray is either extracted from or inserted into a target larger array.
+	 * When the small array, sprout, is inserted, it is indexed from 0..sprout.length. The larger array,
+	 * img or sig, is indexed from read or write point pos to pos + length.
+	 * 
+	 * All float[] arrays should contain audio range values (-1.0f..1.0f).
+	 * All int[] arrays should contain RGB pixel values. 
+	 * 
+	 */
+	
 	
 	/**
 	 * Starting at image coordinates (x, y), reads values from pixel array img using imageToSignalLUT 
@@ -525,7 +535,7 @@ public class PixelAudioMapper {
 	 * Starting at image coordinates (x, y), reads values from pixel array img using imageToSignalLUT 
 	 * to redirect indexing and returns them as an array of transcoded audio values in signal order.
 	 * 
-	 * @param img			an array of RGB pixel values, typically from the bitmap image you are using with PixelAudioMapper
+	 * @param img			source array of RGB pixel values, typically from the bitmap image you are using with PixelAudioMapper
 	 * @param x				x coordinate of a point in the bitmap image from which img is derived
 	 * @param y				y coordinate of a point in the bitmap image from which img is derived
 	 * @param length		length of the subarray to pluck from img
@@ -534,14 +544,80 @@ public class PixelAudioMapper {
 	 */
 	public float[] pluckPixelsAsAudio(int[] img, int x, int y, int length, ChannelNames fromChannel) {
 		int pos = x + y * this.width;
-		float[] petal = new float[length];		
-		for (int i = pos; i < pos + length; i++) {
-			int rgb = img[this.imageToSignalLUT[i]];
-			petal[i] = pullPixelAudio(rgb, fromChannel);		// TODO we can optimize, putting our own switch around loops
-		}		
-		return petal;		
+		float[] samples = new float[length];
+		int j = 0;
+		switch (fromChannel) {
+		case L: {
+			for (int i = pos; i < pos + length; i++) {
+				int rgb = img[this.imageToSignalLUT[i]];						// TODO is it worth lowering legibility and debugging clarity to 
+				samples[j++] = map(brightness(rgb), 0, 1, -1.0f, 1.0f);			// replace rgb with its value expression img[this.imageToSignalLUT[i]]
+			}																	// in hopes of gaining some speed?
+			break;
+		}
+		case H: {
+			for (int i = pos; i < pos + length; i++) {
+				int rgb = img[this.imageToSignalLUT[i]];
+				samples[j++] = map(hue(rgb), 0, 1, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case S: {
+			for (int i = pos; i < pos + length; i++) {
+				int rgb = img[this.imageToSignalLUT[i]];
+				samples[j++] = map(saturation(rgb), 0, 1, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case R: {
+			for (int i = pos; i < pos + length; i++) {
+				int rgb = img[this.imageToSignalLUT[i]];
+				samples[j++] = map(((rgb >> 16) & 0xFF), 0, 255, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case G: {
+			for (int i = pos; i < pos + length; i++) {
+				int rgb = img[this.imageToSignalLUT[i]];
+				samples[j++] = map(((rgb >> 8) & 0xFF), 0, 255, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case B: {
+			for (int i = pos; i < pos + length; i++) {
+				int rgb = img[this.imageToSignalLUT[i]];
+				samples[j++] = map((rgb & 0xFF), 0, 255, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case A: {
+			for (int i = pos; i < pos + length; i++) {
+				int rgb = img[this.imageToSignalLUT[i]];
+				samples[j++] = map(((rgb >> 24) & 0xFF), 0, 255, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case ALL: {
+            // not a simple case, but we'll convert to grayscale using the "luminosity equation."
+			// The brightness value in HSB (case L, above) or the L channel in Lab color spaces could be used, too.
+			for (int i = pos; i < pos + length; i++) {
+				int rgb = img[this.imageToSignalLUT[i]];
+				samples[j++] = map((0.3f * ((rgb >> 16) & 0xFF) + 0.59f * ((rgb >> 8) & 0xFF) + 0.11f * (rgb & 0xFF)), 0, 255, -1.0f, 1.0f);
+			}
+			break;
+		}
+		}
+		return samples;		
 	}
 	
+	/**
+	 * Starting at image coordinates (x, y), reads audio values from signal array sig starting at pos for length values
+	 * and returns a new array of audio values in signal order. No redirection is needed when reading from the signal.
+	 * 
+	 * @param sig		source array of audio values
+	 * @param pos		a position in the sig array
+	 * @param length	number of values to read from sig array
+	 * @return			a new array with the audio values we read
+	 */
 	public float[] pluckSamples(float[] sig, int pos, int length) {
 		float[] samples = new float[length];
 		int j = 0;
@@ -551,6 +627,14 @@ public class PixelAudioMapper {
 		return samples;
 	}
 	
+	/**
+	 * Starting at pos in the sig[] array, read values and transcode them into RGB data.
+	 * 
+	 * @param sig		source array of audio values (-1.0f..1.0f)
+	 * @param pos		entry point in the sig array
+	 * @param length	number of values to read from the sig array
+	 * @return			an array of RGB values where r == g == b, derived from the sig values
+	 */
 	public int[] pluckSamplesAsRGB(float[] sig, int pos, int length) {
 		int[] rgbPixels = new int[length];
 		int j = 0;
@@ -558,210 +642,275 @@ public class PixelAudioMapper {
 			float sample = sig[i];
 			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
 			int v = Math.round(map(sample, -1.0f, 1.0f, 0, 255));
-			int rgb = 255 << 24 | v << 16 | v << 8 | v;
-			rgbPixels[j++] = rgb;
+			rgbPixels[j++] = 255 << 24 | v << 16 | v << 8 | v;
 		}
 		return rgbPixels;
 	}
 
 	
-	public void plantPixels(int[] sprout, int[] img, int x, int y) {
+	/**
+	 * Inserts elements from a source array of RGB pixel values into a target array of RGB pixel values 
+	 * following the signal path. 
+	 * 
+	 * @param sprout	source array of RGB values to insert into target array img
+	 * @param img		target array of RGB values
+	 * @param x			x coordinate in image from which img pixel array was derived
+	 * @param y			y coordinate in image from which img pixel array was derived
+	 * @param length	number of values from sprout to insert into img array
+	 */
+	public void plantPixels(int[] sprout, int[] img, int x, int y, int length) {
 		int pos = x + y * this.width;
-		for (int i = pos; i < pos + sprout.length; i++) {
-			img[imageToSignalLUT[i]] = sprout[i];
+		int j = 0;
+		for (int i = pos; i < pos + length; i++) {
+			img[imageToSignalLUT[i]] = sprout[j++];
 		}
 	}
 	
 	
-	public void plantPixels(int[] sprout, int[] img, int x, int y, ChannelNames toChannel) {
+	/**
+	 * Inserts elements from a source array of RGB pixel values into a specified color channel 
+	 * in a target array of RGB pixel values following the signal path. 
+	 * 
+	 * @param sprout	source array of RGB values to insert into target array img
+	 * @param img		target array of RGB values
+	 * @param x			x coordinate in image from which img pixel array was derived
+	 * @param y			y coordinate in image from which img pixel array was derived
+	 * @param length	number of values from sprout to insert into img array
+	 */
+	public void plantPixels(int[] sprout, int[] img, int x, int y, int length, ChannelNames toChannel) {
 		int pos = x + y * this.width;
+		int j = 0;
 		switch (toChannel) {
 		case L: {
-			for (int i = pos; i < pos + sprout.length; i++) {
+			for (int i = pos; i < pos + length; i++) {
 				int rgb = img[this.imageToSignalLUT[i]];
 				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
-				rgb = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], brightness(sprout[i]));
+				rgb = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], brightness(sprout[j]));
 				img[this.imageToSignalLUT[i]] = rgb;
+				j++;
 			}
 			break;
 		}
 		case H: {
-			for (int i = pos; i < pos + sprout.length; i++) {
+			for (int i = pos; i < pos + length; i++) {
 				int rgb = img[this.imageToSignalLUT[i]];
 				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
-				rgb = Color.HSBtoRGB(hue(sprout[i]), hsbPixel[1], hsbPixel[2]);
+				rgb = Color.HSBtoRGB(hue(sprout[j]), hsbPixel[1], hsbPixel[2]);
 				img[this.imageToSignalLUT[i]] = rgb;				
+				j++;
 			}
 			break;
 		}
 		case S: {
-			for (int i = pos; i < pos + sprout.length; i++) {
+			for (int i = pos; i < pos + length; i++) {
 				int rgb = img[this.imageToSignalLUT[i]];
 				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
-				rgb = Color.HSBtoRGB(hsbPixel[0], saturation(sprout[i]), hsbPixel[2]);
+				rgb = Color.HSBtoRGB(hsbPixel[0], saturation(sprout[j]), hsbPixel[2]);
 				img[this.imageToSignalLUT[i]] = rgb;			
+				j++;
 			}
 			break;
 		}
 		case R: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				int r = (sprout[i] << 16) & 0xFF;	
+			for (int i = pos; i < pos + length; i++) {
+				int r = (sprout[j] << 16) & 0xFF;	
 				int rgb = img[this.imageToSignalLUT[i]];
 				img[this.imageToSignalLUT[i]] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;	
+				j++;
 			}
 			break;
 		}
 		case G: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				int g = (sprout[i] << 8) & 0xFF;	
+			for (int i = pos; i < pos + length; i++) {
+				int g = (sprout[j] << 8) & 0xFF;	
 				int rgb = img[this.imageToSignalLUT[i]];
 				img[this.imageToSignalLUT[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | g << 8 | rgb & 0xFF;	
+				j++;
 			}
 			break;
 		}
 		case B: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				int b = sprout[i] & 0xFF;	
+			for (int i = pos; i < pos + length; i++) {
+				int b = sprout[j] & 0xFF;	
 				int rgb = img[this.imageToSignalLUT[i]];
 				img[this.imageToSignalLUT[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF;		// set new RGB value, change blue channel
+				j++;
 			}
 			break;
 		}
 		case A: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				int a = sprout[i] << 24;
+			for (int i = pos; i < pos + length; i++) {
+				int a = sprout[j] << 24;
 				int rgb = img[this.imageToSignalLUT[i]];
 				img[this.imageToSignalLUT[i]] = a << 24 | ((rgb >> 16) & 0xFF) << 16| ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
+				j++;
 			}
 			break;
 		}
 		case ALL: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				img[imageToSignalLUT[i]] = sprout[i];
+			for (int i = pos; i < pos + length; i++) {
+				img[imageToSignalLUT[i]] = sprout[j++];
 			}
 			break;
 		}
 		} // end switch
 	}
 	
-	// TODO use apply<Channel> methods here
-	public void plantPixels(float[] sprout, int[] img, int x, int y, ChannelNames toChannel) {
+	
+	/**
+	 * Inserts elements from a source array of audio values (-1.0f..1.0f) into a specified color channel 
+	 * in a target array of RGB pixel values following the signal path. 
+	 * 
+	 * @param sprout	source array of RGB values to insert into target array img
+	 * @param img		target array of RGB values
+	 * @param x			x coordinate in image from which img pixel array was derived
+	 * @param y			y coordinate in image from which img pixel array was derived
+	 * @param length	number of values from sprout to insert into img array
+	 */
+	public void plantPixels(float[] sprout, int[] img, int x, int y, int length, ChannelNames toChannel) {
 		int pos = x + y * this.width;
+		int j = 0;
 		switch (toChannel) {
 		case L: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				/*
-				float sample = map(sprout[i], -1.0f, 1.0f, 0, 1);
-				sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;
-				int rgb = img[this.imageToSignalLUT[i]];
-				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
-				rgb = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], sample);
-				img[this.imageToSignalLUT[i]] = rgb;
-				*/
-				img[this.imageToSignalLUT[i]] = this.applyBrightness(sprout[i], img[this.imageToSignalLUT[i]]);
+			for (int i = pos; i < pos + length; i++) {
+				img[this.imageToSignalLUT[i]] = this.applyBrightness(sprout[j++], img[this.imageToSignalLUT[i]]);
 			}
 			break;
 		}
 		case H: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				/*
-				float sample = map(sprout[i], -1.0f, 1.0f, 0, 1);
-				sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;
-				int rgb = img[this.imageToSignalLUT[i]];
-				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
-				rgb = Color.HSBtoRGB(sample, hsbPixel[1], hsbPixel[2]);
-				img[this.imageToSignalLUT[i]] = rgb;
-				*/
-				img[this.imageToSignalLUT[i]] = this.applyHue(sprout[i], img[this.imageToSignalLUT[i]]);
+			for (int i = pos; i < pos + length; i++) {
+				img[this.imageToSignalLUT[i]] = this.applyHue(sprout[j++], img[this.imageToSignalLUT[i]]);
 			}
 			break;
 		}
 		case S: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				/*
-				float sample = map(sprout[i], -1.0f, 1.0f, 0, 1);
-				sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;
-				int rgb = img[this.imageToSignalLUT[i]];
-				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
-				rgb = Color.HSBtoRGB(hsbPixel[0], sample, hsbPixel[2]);
-				img[this.imageToSignalLUT[i]] = rgb;
-				*/
-				img[this.imageToSignalLUT[i]] = this.applySaturation(sprout[i], img[this.imageToSignalLUT[i]]);
+			for (int i = pos; i < pos + length; i++) {
+				img[this.imageToSignalLUT[i]] = this.applySaturation(sprout[j++], img[this.imageToSignalLUT[i]]);
 			}
 			break;
 		}
 		case R: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				/*
-				int r = Math.round(map(sprout[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
-				r = r > 255 ? 255 : r < 0 ? 0 : r;											// a precaution, keep values within limits
-				int rgb = img[this.imageToSignalLUT[i]];
-				img[this.imageToSignalLUT[i]] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
-				*/
-				img[this.imageToSignalLUT[i]] = this.applyRed(sprout[i], img[this.imageToSignalLUT[i]]);
+			for (int i = pos; i < pos + length; i++) {
+				img[this.imageToSignalLUT[i]] = this.applyRed(sprout[j++], img[this.imageToSignalLUT[i]]);
 			}
 			break;
 		}
 		case G: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				/*
-				int g = Math.round(map(sprout[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
-				g = g > 255 ? 255 : g < 0 ? 0 : g;											// a precaution, keep values within limits
-				int rgb = img[this.imageToSignalLUT[i]];
-				img[this.imageToSignalLUT[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | g << 8 | rgb & 0xFF;
-				*/
-				img[this.imageToSignalLUT[i]] = this.applyGreen(sprout[i], img[this.imageToSignalLUT[i]]);
+			for (int i = pos; i < pos + length; i++) {
+				img[this.imageToSignalLUT[i]] = this.applyGreen(sprout[j++], img[this.imageToSignalLUT[i]]);
 			}
 			break;
 		}
 		case B: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				/*
-				int b = Math.round(map(sprout[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
-				b = b > 255 ? 255 : b < 0 ? 0 : b;											// a precaution, keep values within limits
-				int rgb = img[this.imageToSignalLUT[i]];
-				img[this.imageToSignalLUT[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF;		// set new RGB value, change blue channel
-				*/
-				img[this.imageToSignalLUT[i]] = this.applyBlue(sprout[i], img[this.imageToSignalLUT[i]]);
+			for (int i = pos; i < pos + length; i++) {
+				img[this.imageToSignalLUT[i]] = this.applyBlue(sprout[j++], img[this.imageToSignalLUT[i]]);
 			}
 			break;
 		}
 		case A: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				/*
-				int a = Math.round(map(sprout[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
-				a = a > 255 ? 255 : a < 0 ? 0 : a;											// a precaution, keep values within limits
-				int rgb = img[this.imageToSignalLUT[i]];
-				img[this.imageToSignalLUT[i]] = a << 24 | ((rgb >> 16) & 0xFF) << 16| ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
-				*/
-				img[this.imageToSignalLUT[i]] = this.applyAlpha(sprout[i], img[this.imageToSignalLUT[i]]);
+			for (int i = pos; i < pos + length; i++) {
+				img[this.imageToSignalLUT[i]] = this.applyAlpha(sprout[j++], img[this.imageToSignalLUT[i]]);
 			}
 			break;
 		}
 		case ALL: {
-			for (int i = pos; i < pos + sprout.length; i++) {
-				/*
-				int v = Math.round(map(sprout[i], -1.0f, 1.0f, 0, 255));						// map audio value to [0, 255]
-				v = v > 255 ? 255 : v < 0 ? 0 : v;											// a precaution, keep values within limits
-				img[this.imageToSignalLUT[i]] = 255 << 24 | v << 16 | v << 8 | v;		       			// set new RGB value, all channels
-				*/
-				img[this.imageToSignalLUT[i]] = this.applyAll(sprout[i], img[this.imageToSignalLUT[i]]);
+			for (int i = pos; i < pos + length; i++) {
+				img[this.imageToSignalLUT[i]] = this.applyAll(sprout[j++], img[this.imageToSignalLUT[i]]);
 			}
 			break;
 		}
 		} // end switch
 	}
 	
+	/**
+	 * Insert audio samples from source array sprout into target array of audio samples sig. No redirection needed,
+	 * array values are already in signal order.
+	 * 
+	 * @param sprout	source array of audio values (-1.0f..1.0f)
+	 * @param sig		target array of signal values
+	 * @param pos		start point in sig array
+	 * @param length	number of values to copy from sprout array to sig array
+	 */
 	public void plantSamples(float[] sprout, float[] sig, int pos, int length) {
-		
+		int j = 0;
+		for (int i = pos; i < pos + length; i++) {
+			sig[i] = sprout[j++];
+		}
 	}
 	
+	/**
+	 * Insert values from source array of RGB values sprout into target array sig of audio values (-1.0f..1.0f), 
+	 * transcoding from RGB to audio. 
+	 * 
+	 * @param sprout
+	 * @param sig
+	 * @param pos
+	 * @param length
+	 */
 	public void plantSamples(int[] sprout, float[] sig, int pos, int length) {
-		
+		int j = 0;
+		for (int i = pos; i < pos + length; i++) {
+			sig[i] = map(PixelAudioMapper.getGrayscale(sprout[j++]), 0, 255, -1.0f, 1.0f);
+		}
 	}
 
 	public void plantSamples(int[] sprout, float[] sig, int pos, int length, ChannelNames fromChannel) {
-		
+		int j = 0;
+		switch (fromChannel) {
+		case L: {
+			for (int i = pos; i < pos + length; i++) {
+				sig[i] = map(brightness(sprout[j++]), 0, 1, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case H: {
+			for (int i = pos; i < pos + length; i++) {
+				sig[i] = map(hue(sprout[j++]), 0, 1, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case S: {
+			for (int i = pos; i < pos + length; i++) {
+				sig[i] = map(saturation(sprout[j++]), 0, 1, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case R: {
+			for (int i = pos; i < pos + length; i++) {
+				sig[i] = map(((sprout[j++] >> 16) & 0xFF), 0, 255, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case G: {
+			for (int i = pos; i < pos + length; i++) {
+				sig[i] = map(((sprout[j++] >> 8) & 0xFF), 0, 255, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case B: {
+			for (int i = pos; i < pos + length; i++) {
+				sig[i] = map((sprout[j++] & 0xFF), 0, 255, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case A: {
+			for (int i = pos; i < pos + length; i++) {
+				sig[i] = map(((sprout[j++] >> 24) & 0xFF), 0, 255, -1.0f, 1.0f);
+			}
+			break;
+		}
+		case ALL: {
+			for (int i = pos; i < pos + length; i++) {
+				// convert to grayscale using the "luminosity equation."
+				sig[i] = map((0.3f * ((sprout[i] >> 16) & 0xFF) 
+						+ 0.59f * ((sprout[i] >> 8) & 0xFF) 
+						+ 0.11f * (sprout[i] & 0xFF)), 0, 255, -1.0f, 1.0f);
+				j++;
+			}
+			break;
+		}
+		}
+
 	}
 	
 	public int[] peelPixels(int[] img, int x, int y, int w, int h) {
