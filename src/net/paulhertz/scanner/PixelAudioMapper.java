@@ -489,8 +489,8 @@ public class PixelAudioMapper {
 	//------------- SUBARRAYS -------------//
 	
 	/**
-	 * Starting at image coordinates (x, y), reads values from pixel array img following the signal path
-	 * and returns them as an array of RGB pixel values in signal order.
+	 * Starting at image coordinates (x, y), reads values from pixel array img using imageToSignalLUT 
+	 * to redirect indexing and returns them as an array of RGB pixel values in signal order.
 	 * 
 	 * @param img			an array of RGB pixel values, typically from the bitmap image you are using with PixelAudioMapper
 	 * @param x				x coordinate of a point in the bitmap image from which img is derived
@@ -509,7 +509,7 @@ public class PixelAudioMapper {
 	}
 	
 	/*
-	 * It's not clear to me when this signature might be useful. Not yet, anyhow.
+	// It's not clear to me when this signature might be useful. Not yet, anyhow.
 	public int[] pluckPixels(int[] img, int x, int y, int length, ChannelNames fromChannel) {
 		int pos = x + y * this.width;
 		int[] petal = new int[length];		
@@ -522,13 +522,14 @@ public class PixelAudioMapper {
 
 	
 	/**
-	 * Starting at image coordinates (x, y), reads values from pixel array img following the signal path
-	 * and returns them as an array of transcoded audio values in signal order.
+	 * Starting at image coordinates (x, y), reads values from pixel array img using imageToSignalLUT 
+	 * to redirect indexing and returns them as an array of transcoded audio values in signal order.
 	 * 
 	 * @param img			an array of RGB pixel values, typically from the bitmap image you are using with PixelAudioMapper
 	 * @param x				x coordinate of a point in the bitmap image from which img is derived
 	 * @param y				y coordinate of a point in the bitmap image from which img is derived
 	 * @param length		length of the subarray to pluck from img
+	 * @param fromChannel	the color channel from which to read pixel values
 	 * @return				a new array of audio values in signal order
 	 */
 	public float[] pluckPixelsAsAudio(int[] img, int x, int y, int length, ChannelNames fromChannel) {
@@ -571,6 +572,7 @@ public class PixelAudioMapper {
 		}
 	}
 	
+	
 	public void plantPixels(int[] sprout, int[] img, int x, int y, ChannelNames toChannel) {
 		int pos = x + y * this.width;
 		switch (toChannel) {
@@ -579,7 +581,7 @@ public class PixelAudioMapper {
 				int rgb = img[this.imageToSignalLUT[i]];
 				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
 				rgb = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], brightness(sprout[i]));
-				img[this.imageToSignalLUT[i]] = rgb;				
+				img[this.imageToSignalLUT[i]] = rgb;
 			}
 			break;
 		}
@@ -642,8 +644,112 @@ public class PixelAudioMapper {
 		} // end switch
 	}
 	
+	// TODO use apply<Channel> methods here
 	public void plantPixels(float[] sprout, int[] img, int x, int y, ChannelNames toChannel) {
-		
+		int pos = x + y * this.width;
+		switch (toChannel) {
+		case L: {
+			for (int i = pos; i < pos + sprout.length; i++) {
+				/*
+				float sample = map(sprout[i], -1.0f, 1.0f, 0, 1);
+				sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;
+				int rgb = img[this.imageToSignalLUT[i]];
+				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+				rgb = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], sample);
+				img[this.imageToSignalLUT[i]] = rgb;
+				*/
+				img[this.imageToSignalLUT[i]] = this.applyBrightness(sprout[i], img[this.imageToSignalLUT[i]]);
+			}
+			break;
+		}
+		case H: {
+			for (int i = pos; i < pos + sprout.length; i++) {
+				/*
+				float sample = map(sprout[i], -1.0f, 1.0f, 0, 1);
+				sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;
+				int rgb = img[this.imageToSignalLUT[i]];
+				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+				rgb = Color.HSBtoRGB(sample, hsbPixel[1], hsbPixel[2]);
+				img[this.imageToSignalLUT[i]] = rgb;
+				*/
+				img[this.imageToSignalLUT[i]] = this.applyHue(sprout[i], img[this.imageToSignalLUT[i]]);
+			}
+			break;
+		}
+		case S: {
+			for (int i = pos; i < pos + sprout.length; i++) {
+				/*
+				float sample = map(sprout[i], -1.0f, 1.0f, 0, 1);
+				sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;
+				int rgb = img[this.imageToSignalLUT[i]];
+				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+				rgb = Color.HSBtoRGB(hsbPixel[0], sample, hsbPixel[2]);
+				img[this.imageToSignalLUT[i]] = rgb;
+				*/
+				img[this.imageToSignalLUT[i]] = this.applySaturation(sprout[i], img[this.imageToSignalLUT[i]]);
+			}
+			break;
+		}
+		case R: {
+			for (int i = pos; i < pos + sprout.length; i++) {
+				/*
+				int r = Math.round(map(sprout[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
+				r = r > 255 ? 255 : r < 0 ? 0 : r;											// a precaution, keep values within limits
+				int rgb = img[this.imageToSignalLUT[i]];
+				img[this.imageToSignalLUT[i]] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
+				*/
+				img[this.imageToSignalLUT[i]] = this.applyRed(sprout[i], img[this.imageToSignalLUT[i]]);
+			}
+			break;
+		}
+		case G: {
+			for (int i = pos; i < pos + sprout.length; i++) {
+				/*
+				int g = Math.round(map(sprout[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
+				g = g > 255 ? 255 : g < 0 ? 0 : g;											// a precaution, keep values within limits
+				int rgb = img[this.imageToSignalLUT[i]];
+				img[this.imageToSignalLUT[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | g << 8 | rgb & 0xFF;
+				*/
+				img[this.imageToSignalLUT[i]] = this.applyGreen(sprout[i], img[this.imageToSignalLUT[i]]);
+			}
+			break;
+		}
+		case B: {
+			for (int i = pos; i < pos + sprout.length; i++) {
+				/*
+				int b = Math.round(map(sprout[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
+				b = b > 255 ? 255 : b < 0 ? 0 : b;											// a precaution, keep values within limits
+				int rgb = img[this.imageToSignalLUT[i]];
+				img[this.imageToSignalLUT[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF;		// set new RGB value, change blue channel
+				*/
+				img[this.imageToSignalLUT[i]] = this.applyBlue(sprout[i], img[this.imageToSignalLUT[i]]);
+			}
+			break;
+		}
+		case A: {
+			for (int i = pos; i < pos + sprout.length; i++) {
+				/*
+				int a = Math.round(map(sprout[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
+				a = a > 255 ? 255 : a < 0 ? 0 : a;											// a precaution, keep values within limits
+				int rgb = img[this.imageToSignalLUT[i]];
+				img[this.imageToSignalLUT[i]] = a << 24 | ((rgb >> 16) & 0xFF) << 16| ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
+				*/
+				img[this.imageToSignalLUT[i]] = this.applyAlpha(sprout[i], img[this.imageToSignalLUT[i]]);
+			}
+			break;
+		}
+		case ALL: {
+			for (int i = pos; i < pos + sprout.length; i++) {
+				/*
+				int v = Math.round(map(sprout[i], -1.0f, 1.0f, 0, 255));						// map audio value to [0, 255]
+				v = v > 255 ? 255 : v < 0 ? 0 : v;											// a precaution, keep values within limits
+				img[this.imageToSignalLUT[i]] = 255 << 24 | v << 16 | v << 8 | v;		       			// set new RGB value, all channels
+				*/
+				img[this.imageToSignalLUT[i]] = this.applyAll(sprout[i], img[this.imageToSignalLUT[i]]);
+			}
+			break;
+		}
+		} // end switch
 	}
 	
 	public void plantSamples(float[] sprout, float[] sig, int pos, int length) {
@@ -654,6 +760,9 @@ public class PixelAudioMapper {
 		
 	}
 
+	public void plantSamples(int[] sprout, float[] sig, int pos, int length, ChannelNames fromChannel) {
+		
+	}
 	
 	public int[] peelPixels(int[] img, int x, int y, int w, int h) {
 		
@@ -930,6 +1039,60 @@ public class PixelAudioMapper {
 		return hsbPixel[2];
 	}
 	
+	
+	// ------------- APPLY COLOR CHANNEL METHODS ------------- // 
+	
+	public int applyBrightness(float sample, int rgb) {
+		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+		sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);								// map audio sample to (0..1)
+		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);	// pop over to HSB
+		return Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], sample);	
+	}
+	
+	public int applyHue(float sample, int rgb) {
+		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+		sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);								// map audio sample to (0..1)
+		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);	// pop over to HSB
+		return Color.HSBtoRGB(sample, hsbPixel[1], hsbPixel[2]);		
+	}
+	
+	public int applySaturation(float sample, int rgb) {
+		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+		sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);								// map audio sample to (0..1)
+		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);	// pop over to HSB
+		return Color.HSBtoRGB(hsbPixel[0], sample, hsbPixel[2]);
+	}
+	
+	public int applyRed(float sample, int rgb) {
+		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+		int r = Math.round(map(sample, -1.0f, 1.0f, 0, 255));						// map audio sample to [0, 255]
+		return (255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF);		// apply to red channel
+	}
+	
+	public int applyGreen(float sample, int rgb) {
+		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+		int g = Math.round(map(sample, -1.0f, 1.0f, 0, 255));						// map audio sample to [0, 255]
+		return (255 << 24 | ((rgb >> 16) & 0xFF) << 16 | g << 8 | rgb & 0xFF);		// apply to green channel
+	}
+	
+	public int applyBlue(float sample, int rgb) {
+		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+		int b = Math.round(map(sample, -1.0f, 1.0f, 0, 255));						// map audio sample to [0, 255]
+		return (255 << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF);	// apply to blue channel
+	}
+	
+	public int applyAlpha(float sample, int rgb) {
+		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+		int a = Math.round(map(sample, -1.0f, 1.0f, 0, 255));						// map audio sample to [0, 255]
+		return (a<< 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF);	// apply to alpha channel
+	}
+	
+	public int applyAll(float sample, int rgb) {
+		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
+		int v = Math.round(map(sample, -1.0f, 1.0f, 0, 255));						// map audio sample to [0, 255]
+		return 255 << 24 | v << 16 | v << 8 | v;									// apply to all channels except alpha
+	}
+	
 
 	// ------------- AUDIO <---> IMAGE ------------- //
 	
@@ -1185,54 +1348,35 @@ public class PixelAudioMapper {
 	public int pushAudioPixel(float sample, int rgb, ChannelNames chan) {
 		switch (chan) {
 		case L: {
-			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
-			sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);
-			Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
-			rgb = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], sample);
+			rgb = this.applyBrightness(sample, rgb);
 			break;
 		}
 		case H: {
-			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
-			sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);
-			Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
-			rgb = Color.HSBtoRGB(sample, hsbPixel[1], hsbPixel[2]);
+			rgb = this.applyHue(sample, rgb);
 			break;
 		}
 		case S: {
-			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
-			sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);
-			Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
-			rgb = Color.HSBtoRGB(hsbPixel[0], sample, hsbPixel[2]);
+			rgb = this.applySaturation(sample, rgb);
 			break;
 		}
 		case R: {
-			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
-			int r = Math.round(map(sample, -1.0f, 1.0f, 0, 255));	
-			rgb = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;	
+			rgb = this.applyRed(sample, rgb);	
 			break;
 		}
 		case G: {
-			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
-			int g = Math.round(map(sample, -1.0f, 1.0f, 0, 255));	
-			rgb = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | g << 8 | rgb & 0xFF;
+			rgb = this.applyGreen(sample, rgb);
 			break;
 		}
 		case B: {
-			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
-			int b = Math.round(map(sample, -1.0f, 1.0f, 0, 255));
-			rgb = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF;
+			rgb = this.applyBlue(sample, rgb);
 			break;
 		}
 		case A: {
-			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
-			int a = Math.round(map(sample, -1.0f, 1.0f, 0, 255));	
-			rgb = a << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
+			rgb = this.applyAlpha(sample, rgb);
 			break;
 		}
 		case ALL: {
-			sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
-			int v = Math.round(map(sample, -1.0f, 1.0f, 0, 255));
-			rgb = 255 << 24 | v << 16 | v << 8 | v;
+			rgb = this.applyAll(sample, rgb);
 			break;
 		}
 		}
@@ -1265,75 +1409,49 @@ public class PixelAudioMapper {
 		switch (chan) {
 		case L: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				float val = map(buf[i], -1.0f, 1.0f, 0, 1);						// map audio value to (0..1)
-				val = val > 1.0f ? 1.0f : val < 0 ? 0 : val;					// a precaution, keep values within limits
-				int rgb = rgbPixels[i];											// get an RGB pixel value
-				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
-				rgbPixels[i] = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], val);	// and back to RGB with a new brightness component
+				rgbPixels[i] = this.applyBrightness(buf[i], rgbPixels[i]);
 			}
 			break;
 		}
 		case H: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				float val = map(buf[i], -1.0f, 1.0f, 0, 1);						// map audio value to (0..1)
-				val = val > 1.0f ? 1.0f : val < 0 ? 0 : val;					// a precaution, keep values within limits
-				int rgb = rgbPixels[i];											// get an RGB pixel value
-				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
-				rgbPixels[i] = Color.HSBtoRGB(val, hsbPixel[1], hsbPixel[2]);	// and back to RGB with a new hue component
+				rgbPixels[i] = this.applyHue(buf[i], rgbPixels[i]);
 			}
 			break;
 		}
 		case S: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				float val = map(buf[i], -1.0f, 1.0f, 0, 1);						// map audio value to (0..1)
-				val = val > 1.0f ? 1.0f : val < 0 ? 0 : val;					// a precaution, keep values within limits
-				int rgb = rgbPixels[i];											// get an RGB pixel value
-				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
-				rgbPixels[i] = Color.HSBtoRGB(hsbPixel[0], val, hsbPixel[2]);	// and back to RGB with a new saturation component
+				rgbPixels[i] = this.applySaturation(buf[i], rgbPixels[i]);
 			}
 			break;
 		}
 		case R: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				int r = Math.round(map(buf[i], -1.0f, 1.0f, 0, 255));			// map audio value to [0, 255]
-				r = r > 255 ? 255 : r < 0 ? 0 : r;								// a precaution, keep values within limits
-				int rgb = rgbPixels[i];											// get an RGB pixel value
-				rgbPixels[i] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;		// set new RGB value, change red channel
+				rgbPixels[i] = this.applyRed(buf[i], rgbPixels[i]);
 			}
 			break;
 		}
 		case G: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				int g = Math.round(map(buf[i], -1.0f, 1.0f, 0, 255));			// map audio value to [0, 255]
-				g = g > 255 ? 255 : g < 0 ? 0 : g;								// a precaution, keep values within limits
-				int rgb = rgbPixels[i];											// get an RGB pixel value
-				rgbPixels[i] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | g << 8 | rgb & 0xFF;		// set new RGB value, change green channel
+				rgbPixels[i] =  this.applyGreen(buf[i], rgbPixels[i]);
 			}
 			break;
 		}
 		case B: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				int b = Math.round(map(buf[i], -1.0f, 1.0f, 0, 255));			// map audio value to [0, 255]
-				b = b > 255 ? 255 : b < 0 ? 0 : b;								// a precaution, keep values within limits
-				int rgb = rgbPixels[i];											// get an RGB pixel value
-				rgbPixels[i] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF;		// set new RGB value, change blue channel
+				rgbPixels[i] = this.applyBlue(buf[i], rgbPixels[i]);
 			}
 			break;
 		}
 		case A: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				int a = Math.round(map(buf[i], -1.0f, 1.0f, 0, 255));			// map audio value to [0, 255]
-				a = a > 255 ? 255 : a < 0 ? 0 : a;								// a precaution, keep values within limits
-				int rgb = rgbPixels[i];											// get an RGB pixel value
-				rgbPixels[i] = a << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;		// set new RGB value, alpha channel
+				rgbPixels[i] = this.applyAlpha(buf[i], rgbPixels[i]);
 			}
 			break;
 		}
 		case ALL: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				int v = Math.round(map(buf[i], -1.0f, 1.0f, 0, 255));			// map audio value to [0, 255]
-				v = v > 255 ? 255 : v < 0 ? 0 : v;								// a precaution, keep values within limits
-				rgbPixels[i] = 255 << 24 | v << 16 | v << 8 | v;		        // set new RGB value, all channels
+				rgbPixels[i] = this.applyAll(buf[i], rgbPixels[i]);
 			}
 			break;
 		}
@@ -1371,75 +1489,49 @@ public class PixelAudioMapper {
 		switch (chan) {
 		case L: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				float val = map(buf[i], -1.0f, 1.0f, 0, 1);								// map audio value to (0..1)
-				val = val > 1.0f ? 1.0f : val < 0 ? 0 : val;							// a precaution, keep values within limits
-				int rgb = rgbPixels[lut[i]];											// get an RGB pixel value
-				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
-				rgbPixels[lut[i]] = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], val);		// and back to RGB with a new brightness component
+				rgbPixels[lut[i]] = this.applyBrightness(buf[i], rgbPixels[lut[i]]);
 			}
 			break;
 		}
 		case H: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				float val = map(buf[i], -1.0f, 1.0f, 0, 1);								// map audio value to (0..1)
-				val = val > 1.0f ? 1.0f : val < 0 ? 0 : val;							// a precaution, keep values within limits
-				int rgb = rgbPixels[lut[i]];											// get an RGB pixel value
-				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
-				rgbPixels[lut[i]] = Color.HSBtoRGB(val, hsbPixel[1], hsbPixel[2]);		// and back to RGB with a new hue component
+				rgbPixels[lut[i]] = this.applyHue(buf[i], rgbPixels[lut[i]]);
 			}
 			break;
 		}
 		case S: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				float val = map(buf[i], -1.0f, 1.0f, 0, 1);								// map audio value to (0..1)
-				val = val > 1.0f ? 1.0f : val < 0 ? 0 : val;							// a precaution, keep values within limits
-				int rgb = rgbPixels[lut[i]];											// get an RGB pixel value
-				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);		// pop over to HSB
-				rgbPixels[lut[i]] = Color.HSBtoRGB(hsbPixel[0], val, hsbPixel[2]);		// and back to RGB with a new saturation component
+				rgbPixels[lut[i]] = this.applySaturation(buf[i], rgbPixels[lut[i]]);
 			}
 			break;
 		}
 		case R: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				int r = Math.round(map(buf[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
-				r = r > 255 ? 255 : r < 0 ? 0 : r;										// a precaution, keep values within limits
-				int rgb = rgbPixels[lut[i]];											// get an RGB pixel value
-				rgbPixels[lut[i]] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;		// set new RGB value, change red channel
+				rgbPixels[lut[i]] = this.applyRed(buf[i], rgbPixels[lut[i]]);
 			}
 			break;
 		}
 		case G: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				int g = Math.round(map(buf[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
-				g = g > 255 ? 255 : g < 0 ? 0 : g;										// a precaution, keep values within limits
-				int rgb = rgbPixels[lut[i]];											// get an RGB pixel value
-				rgbPixels[lut[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | (g & 0xFF) << 8 | rgb & 0xFF;		// set new RGB value, change green channel
+				rgbPixels[lut[i]] =  this.applyGreen(buf[i], rgbPixels[lut[i]]);
 			}
 			break;
 		}
 		case B: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				int b = Math.round(map(buf[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
-				b = b > 255 ? 255 : b < 0 ? 0 : b;										// a precaution, keep values within limits
-				int rgb = rgbPixels[lut[i]];											// get an RGB pixel value
-				rgbPixels[lut[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF;		// set new RGB value, change blue channel
+				rgbPixels[lut[i]] = this.applyBlue(buf[i], rgbPixels[lut[i]]);
 			}
 			break;
 		}
 		case A: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				int a = Math.round(map(buf[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
-				a = a > 255 ? 255 : a < 0 ? 0 : a;										// a precaution, keep values within limits
-				int rgb = rgbPixels[lut[i]];											// get an RGB pixel value
-				rgbPixels[lut[i]] = a << 24 | ((rgb >> 16) & 0xFF) << 16| ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;		// set new RGB value, alpha channel
+				rgbPixels[lut[i]] = this.applyAlpha(buf[i], rgbPixels[lut[i]]);
 			}
 			break;
 		}
 		case ALL: {
 			for (int i = 0; i < rgbPixels.length; i++) {
-				int v = Math.round(map(buf[i], -1.0f, 1.0f, 0, 255));					// map audio value to [0, 255]
-				v = v > 255 ? 255 : v < 0 ? 0 : v;										// a precaution, keep values within limits
-				rgbPixels[lut[i]] = 255 << 24 | v << 16 | v << 8 | v;		       		// set new RGB value, all channels
+				rgbPixels[lut[i]] = this.applyAll(buf[i], rgbPixels[lut[i]]);
 			}
 			break;
 		}
