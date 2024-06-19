@@ -370,6 +370,7 @@ public class PixelAudioMapper {
 	// TODO rewrite method signatures using SOURCE, TARGET, ARGS or SOURCE, LUT, TARGET, ARGS ordering.  
 	// Names and calls won't change, but change the documentation, too. 
 	// E.g., mapImgToSig(int[] img, float[] sig);
+	// I've been doing this but it should be part of the review before publication.
 	
 	/**
 	 * Map signal values to the image using all channels (effectively, grayscale).
@@ -462,6 +463,11 @@ public class PixelAudioMapper {
 	
 	
 	//------------- TRANSCODING -------------//
+	
+	/* TODO do we replace all identical calls to map() in transcode with calls to transcode? 
+	 * This would seem to be a Good Idea, because then we can override transcode in child classes
+	 * to get new behavior across all methods that involve transcoding. 
+	 */
 	 
 	 /**
 	 * Converts a float value in the range (-1.0, 1.0) to an int value in the range [0..255].
@@ -487,6 +493,7 @@ public class PixelAudioMapper {
 
 	 
 	//------------- SUBARRAYS -------------//
+	
 	/*
 	 * In each case, a source subarray is either extracted from or inserted into a target larger array.
 	 * When the small array, sprout, is inserted, it is indexed from 0..sprout.length. The larger array,
@@ -551,7 +558,7 @@ public class PixelAudioMapper {
 			for (int i = pos; i < pos + length; i++) {
 				int rgb = img[this.imageToSignalLUT[i]];						// TODO is it worth lowering legibility and debugging clarity to 
 				samples[j++] = map(brightness(rgb), 0, 1, -1.0f, 1.0f);			// replace rgb with its value expression img[this.imageToSignalLUT[i]]
-			}																	// in hopes of gaining some speed?
+			}																	// in hopes of gaining some speed? Probably not.
 			break;
 		}
 		case H: {
@@ -913,42 +920,286 @@ public class PixelAudioMapper {
 
 	}
 	
+	/**
+	 * Copy a rectangular area of pixels in image (row major) order and return it as an array of RGB values.
+	 * This is a standard image method, for example, public PImage get(int x, int y, int w, int h) in Processing.
+	 * TODO How much error checking do we want in the pluck/plant/peel/stamp methods? 
+	 * If we check, do we fall through or post an error message?
+	 * 
+	 * @param img
+	 * @param x
+	 * @param y
+	 * @param w
+	 * @param h
+	 * @return
+	 */
 	public int[] peelPixels(int[] img, int x, int y, int w, int h) {
-		
+		int len = w * h;
+		int[] rgbPixels = new int[len];
+		int j = 0;
+		for (int dy = y; dy < dy + h; dy++) {
+			for (int dx = x; dx < x + w; dx++) {
+				rgbPixels[j++] = img[dx + dy * w];
+			}
+		}
+		return rgbPixels;
 	}
 	
+	/**
+	 * Copy a rectangular area of pixels in image (row major) order and return it as an array of audio values (-1.0f..1.0f).
+	 * 
+	 * @param img
+	 * @param x
+	 * @param y
+	 * @param w
+	 * @param h
+	 * @return
+	 */
 	public float[] peelPixelsAsAudio(int[] img, int x, int y, int w, int h) {
-		
+		int len = w * h;
+		float[] samples = new float[len];
+		int j = 0;
+		for (int dy = y; dy < dy + h; dy++) {
+			for (int dx = x; dx < x + w; dx++) {
+				samples[j++] =  map(PixelAudioMapper.getGrayscale(img[dx + dy * w]), 0, 255, -1.0f, 1.0f);
+			}
+		}
+		return samples;
 	}
 	
-	public float[] peelSamples(float[] sig, int pos, int length) {
-		
+	/**
+	 * Follow the coordinates of rectangle defined by x, y, w, h and return the corresponding signal values.
+	 * 
+	 * @param sig
+	 * @param x
+	 * @param y
+	 * @param w
+	 * @param h
+	 * @return
+	 */
+	public float[] peelSamples(float[] sig, int x, int y, int w, int h) {
+		int len = w * h;
+		float[] samples = new float[len];
+		int j = 0;
+		for (int dy = y; dy < dy + h; dy++) {
+			for (int dx = x; dx < x + w; dx++) {
+				samples[j++] =  sig[this.imageToSignalLUT[dx + dy * w]];
+			}
+		}
+		return samples;
 	}
 	
-	public int[] peelSamplesAsRGB(float[]sig, int pos, int length) {
+	public int[] peelSamplesAsRGB(float[]sig, int x, int y, int w, int h) {
+		int len = w * h;
+		int[] rgbPixels = new int[len];
+		int j = 0;
+		for (int dy = y; dy < dy + h; dy++) {
+			for (int dx = x; dx < x + w; dx++) {
+				rgbPixels[j++] =  Math.round(map(sig[this.imageToSignalLUT[dx + dy * w]], 0, 255, -1.0f, 1.0f));
+			}
+		}
+		return rgbPixels;		
+	}
+	
+/*	
+	// I don't think this makes much sense, as far as eventual usefulness
+    public int[] peelSamplesAsRGB(float[]sig, int pos, int length, ChannelNames toChannel) {
 		
 	}
+*/
 	
 
-	public int[] peelSamplesAsRGB(float[]sig, int pos, int length, ChannelNames toChannel) {
-		
+	public void stampPixels(int[] stamp, int[] img, int x, int y, int w, int h) {
+		int j = 0;
+		for (int dy = y; dy < dy + h; dy++) {
+			for (int dx = x; dx < x + w; dx++) {
+				img[dx + dy * w] = stamp[j++];
+			}
+		}
 	}
 	
-
 	public void stampPixels(int[] stamp, int[] img, int x, int y, int w, int h, ChannelNames toChannel) {
-		
+		int j = 0;
+		switch (toChannel) {
+		case L: {
+			for (int dy = y; dy < dy + h; dy++) {
+				for (int dx = x; dx < x + w; dx++) {
+					int rgb = img[dx + dy * w];
+					Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+					rgb = Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], brightness(stamp[j]));
+					img[dx + dy * w] = rgb;
+					j++;
+				}
+			}
+			break;
+		}
+		case H: {
+			for (int dy = y; dy < dy + h; dy++) {
+				for (int dx = x; dx < x + w; dx++) {
+					int rgb = img[dx + dy * w];
+					Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+					rgb = Color.HSBtoRGB(hue(stamp[j]), hsbPixel[1], hsbPixel[2]);
+					img[dx + dy * w] = rgb;
+					j++;
+				}
+			}
+			break;
+		}
+		case S: {
+			for (int dy = y; dy < dy + h; dy++) {
+				for (int dx = x; dx < x + w; dx++) {
+					int rgb = img[dx + dy * w];
+					Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
+					rgb = Color.HSBtoRGB(hsbPixel[0], saturation(stamp[j]), hsbPixel[2]);
+					img[dx + dy * w] = rgb;
+					j++;
+				}
+			}
+			break;
+		}
+		case R: {
+			for (int dy = y; dy < dy + h; dy++) {
+				for (int dx = x; dx < x + w; dx++) {
+					int rgb = img[dx + dy * w];
+					int r = (stamp[j] << 16) & 0xFF;
+					img[dx + dy * w] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
+					;
+					j++;
+				}
+			}
+			break;
+		}
+		case G: {
+			for (int dy = y; dy < dy + h; dy++) {
+				for (int dx = x; dx < x + w; dx++) {
+					int rgb = img[dx + dy * w];
+					int g = (stamp[j] << 8) & 0xFF;
+					img[dx + dy * w] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | g << 8 | rgb & 0xFF;
+					j++;
+				}
+			}
+			break;
+		}
+		case B: {
+			for (int dy = y; dy < dy + h; dy++) {
+				for (int dx = x; dx < x + w; dx++) {
+					int rgb = img[dx + dy * w];
+					int b = stamp[j] & 0xFF;
+					img[dx + dy * w] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF;
+					j++;
+				}
+			}
+			break;
+		}
+		case A: {
+			for (int dy = y; dy < dy + h; dy++) {
+				for (int dx = x; dx < x + w; dx++) {
+					int rgb = img[dx + dy * w];
+					int a = stamp[j] << 24;
+					img[dx + dy * w] = a << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
+					j++;
+				}
+			}
+			break;
+		}
+		case ALL: {
+			for (int dy = y; dy < dy + h; dy++) {
+				for (int dx = x; dx < x + w; dx++) {
+					img[dx + dy * w] = stamp[j];
+					j++;
+				}
+			}
+			break;
+		}
+		}
 	}
 	
-	public void stampPixels(float[] stamp, int[]img, int x, int y, int w, int h, ChannelNames toChannel) {
-		
+	public void stampPixels(float[] stamp, int[] img, int x, int y, int w, int h, ChannelNames toChannel) {
+		int j = 0;
+		switch (toChannel) {
+			case L: {
+				for (int dy = y; dy < dy + h; dy++) {
+					for (int dx = x; dx < x + w; dx++) {
+						img[dx + dy * w] = this.applyBrightness(stamp[j++], img[dx + dy * w]);
+					}
+				}
+				break;
+			}
+			case H: {
+				for (int dy = y; dy < dy + h; dy++) {
+					for (int dx = x; dx < x + w; dx++) {
+						img[dx + dy * w] = this.applyHue(stamp[j++], img[dx + dy * w]);
+					}
+				}
+				break;
+			}
+			case S: {
+				for (int dy = y; dy < dy + h; dy++) {
+					for (int dx = x; dx < x + w; dx++) {
+						img[dx + dy * w] = this.applySaturation(stamp[j++], img[dx + dy * w]);
+					}
+				}
+				break;
+			}
+			case R: {
+				for (int dy = y; dy < dy + h; dy++) {
+					for (int dx = x; dx < x + w; dx++) {
+						img[dx + dy * w] = this.applyRed(stamp[j++], img[dx + dy * w]);
+					}
+				}
+				break;
+			}
+			case G: {
+				for (int dy = y; dy < dy + h; dy++) {
+					for (int dx = x; dx < x + w; dx++) {
+						img[dx + dy * w] = this.applyGreen(stamp[j++], img[dx + dy * w]);
+					}
+				}
+				break;
+			}
+			case B: {
+				for (int dy = y; dy < dy + h; dy++) {
+					for (int dx = x; dx < x + w; dx++) {
+						img[dx + dy * w] = this.applyBlue(stamp[j++], img[dx + dy * w]);
+					}
+				}
+				break;
+			}
+			case A: {
+				for (int dy = y; dy < dy + h; dy++) {
+					for (int dx = x; dx < x + w; dx++) {
+						img[dx + dy * w] = this.applyAlpha(stamp[j++], img[dx + dy * w]);
+					}
+				}
+				break;
+			}
+			case ALL: {
+				for (int dy = y; dy < dy + h; dy++) {
+					for (int dx = x; dx < x + w; dx++) {
+						img[dx + dy * w] = this.applyAll(stamp[j++], img[dx + dy * w]);
+					}
+				}
+				break;
+			}
+			}
+		}
+	
+	public void stampSamples(float[] stamp, float[] sig, int x, int y, int w, int h) {
+		int j = 0;
+		for (int dy = y; dy < dy + h; dy++) {
+			for (int dx = x; dx < x + w; dx++) {
+				sig[this.imageToSignalLUT[dx + dy * w]] = stamp[j++];
+			}
+		}
 	}
 	
-	public void stampSamples(float[] stamp, float[] sig, int pos, int length) {
-		
-	}
-	
-	public void stampSamples(int[] stamp, float[] sig, int pos, int length) {
-		
+	public void stampSamples(int[] stamp, float[] sig, int x, int y, int w, int h) {
+		int j = 0;
+		for (int dy = y; dy < dy + h; dy++) {
+			for (int dx = x; dx < x + w; dx++) {
+				sig[this.imageToSignalLUT[dx + dy * w]] = transcode(stamp[j++]);
+			}
+		}
 	}
 	
 	
