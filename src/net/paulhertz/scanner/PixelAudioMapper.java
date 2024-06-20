@@ -1,254 +1,211 @@
 /**
- * 
+ *
  */
 package net.paulhertz.scanner;
+
 
 import java.awt.Color;
 import java.util.Arrays;
 
 
 /**
- * PixelAudioMapper is the parent class for child classes that map a 1D "signal" array of 
- * floating point numbers to a 2D "image" array of integers. It makes assumptions about the 
+ * <p>
+ * PixelAudioMapper is the parent class for child classes that map a 1D "signal" array of
+ * floating point numbers to a 2D "image" array of integers. It makes assumptions about the
  * range of values in these arrays, detailed below. This class specifically handles the one-to-one
- * mapping between the signal and the image arrays. The mapping is handled by lookup tables 
+ * mapping between the signal and the image arrays. The mapping is handled by lookup tables
  * created by a separate mapping generator class. If you think of the signal as a space-filling
  * curve that visits each pixel in the image, one lookup table is a list of index numbers of
- * each pixel it visits, in the order it traverses them. It uses the table to "look up" the 
+ * each pixel it visits, in the order it traverses them. It uses the table to "look up" the
  * pixels in the image array. There is a similar lookup table for the image that allows you
  * to look up the corresponding value in the signal array.
- * 
+ * </p>
+ * <p>
  * Some typical uses for this class include:
- * 	  - Reading an audio file or audio stream into the signal array and then writing its 
- *		transcoded values to the image array for display as a visualization.
- *	  - Using interaction with an image to trigger audio events at precise locations in a signal.
- *    - Running audio filters on an image-as-signal and writing the results to the image.
- *    - Running image algorithms on a signal-as-image and writing the results back to the signal.
- *    - Synthesizing image data and audio and then animating the data while interactively 
- *      triggering audio events. 
- * 
- * 
- * DATA REPRESENTATION
- * 
- * For the sake of generality, the enclosing types for image and audio data are implemented outside  
- * this class. In Processing, PImage wraps image data. I have been using the minim library for audio, 
- * (https://code.compartmental.net/minim/) but the built-in audio in Processing 4 is definitely an option. 
- * 
- * Within this class, image pixels are represented as an array of ints, and audio samples are represented
- * as an array of floats. Processing.core.PImage.pixels can provide the int array. Whatever audio class 
- * you use can provide the float array.
- * 
- * The image array contains standard 24- or 32-bit RGB or RGBA pixel data, in row major order, 
- * with (0,0) at upper left corner. The signal array contains values in the range [-1.0,1.0], 
- * a standard format for audio values. It is up to the implementation to devise methods to convert 
- * values from signal to image and vice versa: unless my default methods suit your purpose, 
- * you should override the transcode() methods.
- * 
+ * <ul>
+ * 	  <li> Reading an audio file or audio stream into the signal array and then writing its
+ *		transcoded values to the image array for display as a visualization.</li>
+ *	  <li> Using interaction with an image to trigger audio events at precise locations in a signal.</li>
+ *    <li> Running audio filters on an image-as-signal and writing the results to the image.</li>
+ *    <li> Running image algorithms on a signal-as-image and writing the results back to the signal.</li>
+ *    <li> Synthesizing image data and audio and then animating the data while interactively
+ *      triggering audio events. </li>
+ *  </p>
  *
- * Image
+ * <h2>DATA REPRESENTATION</h2>
+ * <p>
+ * For the sake of generality, the enclosing types for image and audio data are implemented outside
+ * this class. In Processing, PImage wraps image data. I have been using the minim library for audio,
+ * (https://code.compartmental.net/minim/) but the built-in audio in Processing 4 is definitely an option.
+ * </p><p>
+ * Within this class, image pixels are represented as an array of ints, and audio samples are represented
+ * as an array of floats. Processing.core.PImage.pixels can provide the int array. Whatever audio class
+ * you use can provide the float array.
+ * </p><p>
+ * The image array contains standard 24- or 32-bit RGB or RGBA pixel data, in row major order,
+ * with (0,0) at upper left corner. The signal array contains values in the range [-1.0,1.0],
+ * a standard format for audio values. It is up to the implementation to devise methods to convert
+ * values from signal to image and vice versa: unless my default methods suit your purpose,
+ * you should override the transcode() methods.
+ * </p>
+ * <p>
+ * <h3>Image</h3>
+ * <pre>
  *	 Width w, Height h
  *	 Index values {0..(w * h - 1)} point into the pixel array.
  *	 Index to coordinate conversion for row major order with index i, width w, height h:
  *		i = x + w * y;
  *		x = i % w; y = floor(i/w);
  *	 Default data format: 24-bit RGB or 32-bit RGBA, for display from a bitmap to a computer monitor.
- *   RGBA includes an alpha channel A.
- *
- * Signal
+ *	 RGBA includes an alpha channel A.
+ * </pre>
+ * <h3>Signal</h3>
+ * <pre>
  *	 Array with same cardinality as image data array {0..(w * h - 1)}
  *	 Default data format: floating point values in the range {-1.0..1.0}
+ * </pre>
  *
- * 
- * LOOKUP TABLES
- * 
+ * <h2>LOOKUP TABLES</h2>
+ *
+ * <p>
  * At their most general, lookup tables or LUTs set up a one-to-one correspondence between two arrays
  * of the same cardinality, independent of the format of their data values. Every element in one array
  * corresponds to exactly one element in the other array. Starting from array A, for an element at index
  * A[i] we find the index of the corresponding element in array B at aToBLUT[i]. An element j in array B
- * has the index of its counterpart in array A at bToALUT[j]. 
- *
- * In PixelAudioMapper, we employ two LUTs, signalToImageLUT and imageToSignalLUT, to map elements in signal 
- * or image to the corresponding position in image or signal. 
- *
+ * has the index of its counterpart in array A at bToALUT[j].
+ * </p><p>
+ * In PixelAudioMapper, we employ two LUTs, signalToImageLUT and imageToSignalLUT, to map elements in signal
+ * or image to the corresponding position in image or signal.
+ * <pre>
  *	signalToImageLUT: integer values over {0..(h * w - 1)} map a signal array index to a pixel array index
  *	imageToSignalLUT: integer values over (0..(h * w - 1)} map an image array index to a signal array index
- *
- * In signalToImageLUT, we can get the pixel index in the image for any index in the signal. 
- * In imageToSignalLUT, we can get index in the signal for any pixel index in the image. 
- *
+ * </pre>
+ * In signalToImageLUT, we can get the pixel index in the image for any index in the signal.
+ * In imageToSignalLUT, we can get index in the signal for any pixel index in the image.
+ * </p><p>
  * Each array is the inverse of the other: for an array index i:
- *	
+ * <pre>
  *	signalToImageLUT[imageToSignalLUT[i]] == i;
  *	imageToSignalLUT[signalToImageLUT[i]] == i;
- *
- * Image data is always in row major order for PImage, our image data class. Signal values can be mapped 
- * to locations in the image in any arbitrary order, as long their coordinates traverse the entire image. 
- * A typical reordering might be a zigzag from upper left to lower right of an image, or a space-filling 
- * fractal, or even a randomly shuffled order. The coordinates of each pixel in the image are stored as  
+ * </pre>
+ * </p><p>
+ * Image data is always in row major order for PImage, our image data class. Signal values can be mapped
+ * to locations in the image in any arbitrary order, as long their coordinates traverse the entire image.
+ * A typical reordering might be a zigzag from upper left to lower right of an image, or a space-filling
+ * fractal, or even a randomly shuffled order. The coordinates of each pixel in the image are stored as
  * indices (i = x + w * y) in signalToImageLUT.
- * 
- * Once we know the “pixel index” for each value in the signal and have initialized signalToImageLUT, 
+ * </p><p>
+ * Once we know the “pixel index” for each value in the signal and have initialized signalToImageLUT,
  * we can initialize imageToSignalLUT:
- *
+ *	<pre>
  *	for (int i = 0; i < w * h - 1; i++) {
  *		imageToSignalLUT[signalToImageLUT[i]] = i;
  *	}
- *
- * Accordingly, we set up the PixelAudioMapper constructor to generate signalToImageLUT first and then generate 
- * imageToSignalLUT from signalToImageLUT. It uses a subsidiary class to do this. 
- *  
+ *  </pre>
+ * </p><p>
+ * Accordingly, we set up the PixelAudioMapper constructor to generate signalToImageLUT first and then generate
+ * imageToSignalLUT from signalToImageLUT. It uses a subsidiary class to do this.
+ * </p><p>
  * Note that the same LUT could be used by multiple instances of PixelAudioMapper, as long as it is in effect
  * a static variable. The LUT for a 512 x 512 pixel Hilbert curve can be calculated once and copied to
- * or called by every PixelAudio instance that maps a signal to a 512 x 512 bitmap using a Hilbert curve. 
- * A call to the PixelMapGen.generate() method will provide a signalToImageLUT which can be used by 
- * all PixelAudioMapper instances with the same width and height. 
- * 
- * Currently, I am using a PixelMapGen instance as an argument to the PixelAudioMapper constructor. 
+ * or called by every PixelAudio instance that maps a signal to a 512 x 512 bitmap using a Hilbert curve.
+ * A call to the PixelMapGen.generate() method will provide a signalToImageLUT which can be used by
+ * all PixelAudioMapper instances with the same width and height.
+ * </p><p>
+ * Currently, I am using a PixelMapGen instance as an argument to the PixelAudioMapper constructor.
  * First create a PixMapGen instance with the width and height of the image you are addressing. The PixMapGen
- * instance will generate the LUTs for its particular mapping for you. You can then pass it to the 
- * PixelAudioMapper constructor, which will initialize its variables from copies of the PixMapGen LUTs. 
- * Some of the logic behind this process is explained in my notes to the PixMapGen abstract class. 
- * 
+ * instance will generate the LUTs for its particular mapping for you. You can then pass it to the
+ * PixelAudioMapper constructor, which will initialize its variables from copies of the PixMapGen LUTs.
+ * Some of the logic behind this process is explained in my notes to the PixMapGen abstract class.
+ * </p>
  *
- * MAPPING AND TRANSCODING
- * 
- * We typically use the LUTs whenever we change the data in the signal or the image and want to write 
- * the new values to its counterpart, updating the appearance of the image or the sound of the audio signal. 
- * If the values in the arrays are in different formats, we will need to transcode the values from one 
+ * <h2>MAPPING AND TRANSCODING</h2>
+ * <p>
+ * We typically use the LUTs whenever we change the data in the signal or the image and want to write
+ * the new values to its counterpart, updating the appearance of the image or the sound of the audio signal.
+ * If the values in the arrays are in different formats, we will need to transcode the values from one
  * format to the other. We have two methods, in pseudocode here:
- * 
+ * <pre>
  *	mapSigToImg		map signal values to the image: img[i] = transcode(sig[imgLUT[i]]);
  *	mapImgToSig		map image values to the signal: sig[i] = transcode(img[sigLUT[i]]);
- *
- * The img variable in the pseudocode corresponds to an array of RGB data from a bitmap class. 
- * The sig variable corresponds to an array of floating point samples from an audio class. 
+ * </pre>
+ * The img variable in the pseudocode corresponds to an array of RGB data from a bitmap class.
+ * The sig variable corresponds to an array of floating point samples from an audio class.
  * Implementation of the transcode() method is left to child instances of PixelArrayMapper.
- * 
+ * </p><p>
  * In addition, we can write image or signal values directly, without using the LUTs. This operation transforms
- * the order of the pixel or signal values. 
- * 
+ * the order of the pixel or signal values.
+ * <pre>
  * 	writeImgToSig	write image values directly to the signal: sig[i] = transcode(img[i]);
- *	writeSigToImg	write signal values directly to the image: img[i] = transcode(sig[i]);	
+ *	writeSigToImg	write signal values directly to the image: img[i] = transcode(sig[i]);
+ * </pre>
  *
- * 
- * READING AND WRITING SUBARRAYS
- * 
- * When we want to work with subarrays of data from the signal or the image, it can be ordered either 
- * by the signal or image array order or by mapping with the corresponding LUT. In the case of images, 
- * we also have standard methods of reading and writing rectangular selections. We can define some 
- * methods to read and write data either in the order determined by the signal or by rectangular 
- * areas in the image. We’ll call the former methods pluck (read) and plant (write), and the latter 
- * peel (read) and stamp (write). The method signatures may be sufficient to determine the order of values 
- * when reading or writing, but it may clarify things to modify the name. 
- * 
- * When data to be written is not in the format of the target array, it will have to be transcoded first. 
- * In the following, intArray contains pixel data and floatArray contains signal data. 
+ * <h2>READING AND WRITING SUBARRAYS</h2> // TODO rewrite this section
+ * <p>
+ * When we want to work with subarrays of data from the signal or the image, it can be ordered either
+ * by the signal or image array order or by mapping with the corresponding LUT. In the case of images,
+ * we also have standard methods of reading and writing rectangular selections. We can define some
+ * methods to read and write data either in the order determined by the signal or by rectangular
+ * areas in the image. We’ll call the former methods pluck (read) and plant (write), and the latter
+ * peel (read) and stamp (write). The method signatures may be sufficient to determine the order of values
+ * when reading or writing, but it may clarify things to modify the name.
+ * </p><p>
+ * When data to be written is not in the format of the target array, it will have to be transcoded first.
+ * In the following, intArray contains pixel data and floatArray contains signal data.
  * Pos is an index into the signal, x and y are locations in the image. The length parameter is associated
- * with the array order of samples or pixels. The w and h parameters work with rectangular areas mapped 
- * from the image. When we call peel or stamp on signal data, length should be equal to w * h for 
+ * with the array order of samples or pixels. The w and h parameters work with rectangular areas mapped
+ * from the image. When we call peel or stamp on signal data, length should be equal to w * h for
  * a given rectangular area of the image.
- * 
- * Arguments to mapping and writing methods are written so that source precedes target. Using this convention, 
- * most methods have a unique signature that also indicates how they function. Where there are ambiguities or 
- * a need for clrification, I have renamed the function, as in pluckPixelsAsFloat, pluckSamplesAsInt, 
+ * </p><p>
+ * Arguments to mapping and writing methods are written so that source precedes target. Using this convention,
+ * most methods have a unique signature that also indicates how they function. Where there are ambiguities or
+ * a need for clrification, I have renamed the function, as in pluckPixelsAsFloat, pluckSamplesAsInt,
  * peelPixelsAsFloat, and peelSamplesAsInt.
- * 
- *	PLUCK
- *	copy in signal order	fromChannel			Return 		Notes
- *  --------------------------------------------------------------------------------------------------------------------------
- *	pluckPixels()			R, G, B, H, S, L	int[]		return RGB or channel as ints in signal order
- *	pluckPixelsAsFloat()	R, G, B, H, S, L	float[]		return transcoded RGB, HSL, or channel as floats in signal order
- *	pluckSamples()			n/a					float[] 	return float[] in signal order
- *	pluckSamplesAsInt()		n/a					int[]		transcode floats and return int[] in signal order
  *
- *	PLANT
- *	paste in signal order	values		toChannel			Notes
- *  --------------------------------------------------------------------------------------------------------------------------
- *  plantPixels()			int[]		R, G, B, H, S, L    paste to RGB by default, otherwise plant to channel
- * 							float[]		R, G, B, H, S, L    transcode and paste to selected channel or gray RGB
- *  plantSamples()			float[]		n/a				    default for float[], paste into signal
- *  						int[]		n/a					transcode int[] argument to float and paste into signal
- *  
- *	PEEL
- *	copy in image order		fromChannel			Return		Notes
- *  --------------------------------------------------------------------------------------------------------------------------
- *	peelPixels()			R, G, B, H, S, L	int[]		return a rectangular area of pixel values from image
- *	peelPixelsAsFloat()		R, G, B, H, S, L	float[]		transcode and return a rectangular area of pixel values as floats
- *	peelSamples()			n/a					float[]		default: return a rectangular area of signal values
- *	peelSamplesAsInt()		n/a					int[]		transcode and return a rectangular area of signal values as ints
+ * </p>
  *
- *
- *	STAMP
- *	paste in image order	values		toChannel			Notes
- *  --------------------------------------------------------------------------------------------------------------------------
- *  stampPixels()			int[]		R, G, B, H, S, L    paste RGB or channel values to a rectangular area of the image
- * 	stampPixelsFloat()		float[]		R, G, B, H, S, L    transcode float[] to int[], defaults to gray
- *  stampSamples()			int[]		n/a		       		int[] always gets transcoded, paste values to a
- *  stampSamplesInt()		float[]		n/a					rectangular area of the signal
- *  
- *	
- *	int[]   pluckPixels(x, y, length, fromChannel)			source = image, ordered by signal, return int[]
- *	float[] pluckPixelsAsFloat(x, y, length, fromChannel)	source = image, ordered by signal, return transcoded float[]
- *	float[] pluckSamples(pos, length)						source = signal, ordered by signal, return float[]
- *	int[]	pluckSamplesAsInt(pos, length)					source = signal, ordered by signal, return transcoded int[]
- *
- *	plantPixels(x, y, int[], toChannel)						target = image, ordered by signal
- *	plantPixels(x, y, float[], toChannel)			        target = image, ordered by signal, transcode to int values
- *	plantSamples(pos, length, float[])					    target = signal, ordered by signal
- *	plantSamples(pos, length, int[])					    target = signal, ordered by signal, transcode to float values
- *	
- *	int[]	peelPixels(x, y, w, h)					        source = image, ordered by image, return int[]
- *	float[]	peelPixelsAsFloat(x, y, w, h)				   	source = image, ordered by image, return transcoded float[]
- *	float[]	peelSamples(pos, length);			    		source = signal, ordered by image, return float[]
- *	int[]	peelSamplesAsInt(pos, length);			    	source = signal, ordered by image, return transcoded int[]
- *
- *	stampPixels(x, y, w, h, int[], toChannel)				target = image, ordered by image
- *	stampPixels(x, y, w, h, float[], toChannel)				target = image, ordered by image, transcode to int values
- *	stampSamples(pos, length, float[])		    			target = signal, ordered by image
- *	stampSamples(pos, length, int[])		    			target = signal, ordered by image, transcode to int values
- * 
- * 
- * ARRAY SHIFTING
- * 
+ * <h2>ARRAY SHIFTING<?h2>
+ * <p>
  * Standard operations we can perform with the signal array:
+ * <pre>
  *   shiftLeft()		an array rotation where index values decrease and wrap around at the beginning
  *   shiftRight()		an array rotation where index values increase and wrap around at the end
- *   
- * Shifting has proved so useful for animation that I am including it in the class. The shift methods also demonstrate 
- * how to update the signal and pixel arrays. 
- * 
- * 
- * OTHER OPEREATIONS
- * 
+ * </pre>
+ * Shifting has proved so useful for animation that I am including it in the class. The shift methods also demonstrate
+ * how to update the signal and pixel arrays.
+ * </p>
+ *
+ * <h2>OTHER OPERATIONS</h2>
+ * <p>
  * The following are suggestions for methods that could be implemented in children of PixelArrayMapper.
- *  
- *	 audio synthesis (the WaveSynth algorithm used in the animation for Campos | Temporales)
- *	 pattern generation (the Argosy pattern algorithm for Campos | Temporales, https://vimeo.com/856300250)
- * 	 phase shifting, amplitude modulation, etc. 
- *   FFT operations on both image and signal data
- *   pixel sorting, typically on image data
- *   blur, sharpen, etc.
- *   blending images
- *   mixing signals
- *   
- * 
- * UPDATING AUDIO AND IMAGE
- * 
+ * <ul>
+ *	 <li>audio synthesis (the WaveSynth algorithm used in the animation for Campos | Temporales)</li>
+ *	 <li>pattern generation (the Argosy pattern algorithm for Campos | Temporales, https://vimeo.com/856300250)</li>
+ * 	 <li>phase shifting, amplitude modulation, etc. </li>
+ *	 <li>FFT operations on both image and signal data</li>
+ *	 <li>pixel sorting, typically on image data</li>
+ *	 <li>blur, sharpen, etc.</li>
+ *	 <li>blending images</li>
+ *	 <li>mixing signals</li>
+ * </ul>
+ *
+ * <h2>UPDATING AUDIO AND IMAGE</h2>
+ * <p>
  * As a rule, operations on the signal should be followed by writing to the image, and operations
- * on the image should be followed by writing to the signal. This will keep the values synchronized, 
- * even though they have different numerical formats. 
- * 
- * In most of the examples that accompany this library, audio data uses the Lightness channel of an 
- * HSL representation of the image's  RGB data, but this is by no means the only way of doing things. 
- * Using the Lightness channel  restricts audio data to 8 bits, apt for glitch esthetics, but noisy. 
- * It's also possible to  maintain high resolution data in the signal by processing image and audio 
+ * on the image should be followed by writing to the signal. This will keep the values synchronized,
+ * even though they have different numerical formats.
+ * </p><p>
+ * In most of the examples that accompany this library, audio data uses the Lightness channel of an
+ * HSL representation of the image's  RGB data, but this is by no means the only way of doing things.
+ * Using the Lightness channel  restricts audio data to 8 bits, apt for glitch esthetics, but noisy.
+ * It's also possible to  maintain high resolution data in the signal by processing image and audio
  * data separately, and  writing audio data to the image but not in the other direction.
- * 
+ * </p><p>
  * Finally, it bears mentioning that the image can be treated as simply an interface into an audio
  * buffer, where events such as mouse clicks or drawing and animation trigger audio events but do not
  * modify the audio buffer. Library examples will provide some suggestions for this strategy.
- * 
- * 
+ * </p>
+ *
  */
 public class PixelAudioMapper {
 	// necessary instance variables
@@ -258,10 +215,10 @@ public class PixelAudioMapper {
 	protected int height;
 	/** pixel array and signal array length, equal to w * h */
 	protected int len;
-	/** Lookup table to go from the signal to the image: index values over {0..(h * w - 1)} 
+	/** Lookup table to go from the signal to the image: index values over {0..(h * w - 1)}
 	 * point to a corresponding index position in the image array img.pixels[] */
 	protected int signalToImageLUT[];
-	/** Lookup table to go from the image to the signal: index values over {0..(h * w - 1)} 
+	/** Lookup table to go from the image to the signal: index values over {0..(h * w - 1)}
 	 * point to a corresponding index position in the signal array sig[] */
 	protected int imageToSignalLUT[];
 	/** PixelMapGenINF instance to generate LUTs */
@@ -274,12 +231,10 @@ public class PixelAudioMapper {
 		R, G, B, H, S, L, A, ALL;
 	}
 
-	
+
 
 	/**
-	 * Basic constructor for PixelAudio, sets up all variables. 
-	 * @param width		width
-	 * @param height		height
+	 * Basic constructor for PixelAudio, sets up all variables.
 	 * @param gen 	A PixelMapGenINF instance -- should be initialized already.
 	 */
 	public PixelAudioMapper(PixelMapGen gen) {
@@ -291,54 +246,55 @@ public class PixelAudioMapper {
 		this.imageToSignalLUT = gen.getSampleMapCopy();
 	}
 
-	
-	//------------- Dimensions -------------//
-	
 
-	
+	//------------- Dimensions -------------//
+
+
+
 	/** @return the width of the image */
 	public int getWidth() {
 		return this.width;
 	}
-	
+
 	/** @return the height of the image */
 	public int getHeight() {
 		return this.height;
 	}
-	
+
 	/** @return the length of the signal array (== length of image pixel array and the LUTs) */
 	public int getSize() {
 		return this.len;
 	}
-	
+
 	/** @return a string representation of our data, possibly partial */
+	@Override
 	public String toString() {
 		return "Parent class for PixelAudioMapper objects, with documentation in its comments.";
 	}
-		
+
 
 	//------------- LUTs -------------//
 
-	
+
 	/** @return the lookup table that maps an index in the signal to the corresponding pixel index in the image. */
 	public int[] getSignalToImageLUT() {
 		return this.signalToImageLUT;
 	}
-	
+
 	/**
-	 * Sets a new lookup table for mapping signal to image. 
+	 * Sets a new lookup table for mapping signal to image.
 	 * Warning: The size of sigLUT must conform to the size the current image and signal arrays.
 	 * @param sigLUT
 	 */
 	protected void setSignalToImageLUT(int[] sigLUT) {
 		this.signalToImageLUT = sigLUT;
 	}
-	
+
 	/** @return the lookup table that maps pixel values in the image to the corresponding entry in the signal. */
 	public int[] getImageToSignalLUT() {
 		return this.imageToSignalLUT;
 	}
-	
+
 	/**
 	 * Sets a new lookup table for mapping image to signal.
 	 * Warning: the size of imgLUT must conform to the size the current image and signal arrays.
@@ -347,48 +303,48 @@ public class PixelAudioMapper {
 	protected void setImageToSignalLUT(int[] imgLUT) {
 		this.imageToSignalLUT = imgLUT;
 	}
-	
+
 	/**
-	 * Generate signalToImageLUT. 
+	 * Generate signalToImageLUT.
 	 */
 	public int[] generateSignalToImageLUT() {
 		return this.generator.generate();
 	}
-	
+
 	/**
 	 * Called when signalToImageLUT has been initialized to generate imageToSignalLUT
 	 */
 	public void generateImageToSignalLUT(int[] sigLUT) {
 		for (int i = 0; i < width * height - 1; i++) {
 			this.imageToSignalLUT[sigLUT[i]] = i;
-		}		
+		}
 	}
-		
-	
+
+
 	//------------- MAPPING -------------//
 
-	// TODO rewrite method signatures using SOURCE, TARGET, ARGS or SOURCE, LUT, TARGET, ARGS ordering.  
-	// Names and calls won't change, but change the documentation, too. 
+	// TODO rewrite method signatures using SOURCE, TARGET, ARGS or SOURCE, LUT, TARGET, ARGS ordering.
+	// Names and calls won't change, but change the documentation, too.
 	// E.g., mapImgToSig(int[] img, float[] sig);
 	// I've been doing this but it should be part of the review before publication.
-	
+
 	/**
 	 * Map signal values to the image using all channels (effectively, grayscale).
 	 * On completion, img[] contains new values. The img array and the sig array
 	 * must be the same size.
-	 * 
+	 *
 	 * @param sig an array of floats in the audio range (-1..1)
 	 * @param img an array of RGB pixel values
 	 */
 	public void mapSigToImg(float[] sig, int[] img) {
 		this.pushAudioPixel(sig, img, imageToSignalLUT, ChannelNames.ALL);		// calls our utility method's grayscale conversion
 	}
-	 
+
 	/**
 	 * Map signal values to a specified channel in the image.
-	 * On completion, img[] contains new values. 
+	 * On completion, img[] contains new values.
 	 * The img array and the sig array must be the same size.
-	 * 
+	 *
 	 * @param sig			an array of floats in the audio range (-1..1)
 	 * @param img			an array of RGB pixel values
 	 * @param toChannel		the channel to write transcoded values to
@@ -396,13 +352,13 @@ public class PixelAudioMapper {
 	public void mapSigToImg(float[] sig, int[] img, ChannelNames toChannel) {
 		this.pushAudioPixel(sig, img, imageToSignalLUT, toChannel);				// call our utility method with toChannel
 	}
-	 
+
 	/**
-	 * Map current image pixel values to the signal, updating the signal array. 
-	 * There are several ways to do this derive a value we want from the image: we use 
-	 * the brightness channel in the HSB color space. On completion, sig[] contains new values. 
+	 * Map current image pixel values to the signal, updating the signal array.
+	 * There are several ways to do this derive a value we want from the image: we use
+	 * the brightness channel in the HSB color space. On completion, sig[] contains new values.
 	 * The img array and the sig array must be the same size.
-	 * 
+	 *
 	 * @param sig			an array of floats in the audio range (-1..1)
 	 * @param img			an array of RGB pixel values
 	 */
@@ -411,10 +367,10 @@ public class PixelAudioMapper {
 	 }
 
 	/**
-	 * Map current image pixel values to the signal, updating the signal array, deriving 
-	 * a value from specified color channel of the image. On completion, sig[] contains new values. 
+	 * Map current image pixel values to the signal, updating the signal array, deriving
+	 * a value from specified color channel of the image. On completion, sig[] contains new values.
 	 * The img array and the sig array must be the same size.
-	 * 
+	 *
 	 * @param sig			an array of floats in the audio range (-1..1)
 	 * @param img			an array of RGB pixel values
 	 * @param fromChannel	the color channel to get a value from
@@ -426,14 +382,14 @@ public class PixelAudioMapper {
 	/**
 	 * Writes transcoded pixel values directly to the signal, without using a LUT to redirect. V
 	 * Values are calculated with the standard luminosity equation, gray = 0.3 * red + 0.59 * green + 0.11 * blue.
-	 * 
+	 *
 	 * @param img		an array of RGB pixel values, source
 	 * @param sig		an array of audio samples in the range (-1.0..1.0), target
 	 */
 	public void writeImgToSig(int[] img, float[] sig) {
 		this.pullPixelAudio(img, sig, ChannelNames.ALL);
 	 }
-	 
+
 	/**
 	 * @param img			an array of RGB pixel values, source
 	 * @param sig			an array of audio samples in the range (-1.0..1.0), target
@@ -442,7 +398,7 @@ public class PixelAudioMapper {
 	public void writeImgToSig(int[] img, float[] sig, ChannelNames fromChannel) {
 		 this.pullPixelAudio(img, sig, fromChannel);
 	 }
-	 
+
 	/**
 	 * @param sig		an array of audio samples in the range (-1.0..1.0), source
 	 * @param img		an array of RGB pixel values, target
@@ -459,19 +415,19 @@ public class PixelAudioMapper {
 	public void writeSigToImg(float[] sig, int[] img, ChannelNames toChannel) {
 		 this.pushAudioPixel(sig, img, toChannel);
 	 }
-	
-	
-	
+
+
+
 	//------------- TRANSCODING -------------//
-	
-	/* TODO do we replace all identical calls to map() in transcode with calls to transcode? 
+
+	/* TODO do we replace all identical calls to map() in transcode with calls to transcode?
 	 * This would seem to be a Good Idea, because then we can override transcode in child classes
-	 * to get new behavior across all methods that involve transcoding. 
+	 * to get new behavior across all methods that involve transcoding.
 	 */
-	 
+
 	 /**
 	 * Converts a float value in the range (-1.0, 1.0) to an int value in the range [0..255].
-	 * 
+	 *
 	 * @param val	a float value in the range (-1.0, 1.0)
 	 * @return		an int mapped to the range [0..255]
 	 */
@@ -479,10 +435,10 @@ public class PixelAudioMapper {
 		 float vout = map(val, -1.0f, 1.0f, 0, 255);
 		 return Math.round(vout);
 	 }
-	 
+
 	 /**
 	 * Converts an int value in the range [0..255] to a float value in the range (-1.0, 1.0).
-	 * 
+	 *
 	 * @param val	an int int he range [0..255]
 	 * @return		a float mapped to the range (-1.0, 1.0)
 	 */
@@ -491,24 +447,24 @@ public class PixelAudioMapper {
 		 return vout;
 	 }
 
-	 
+
 	//------------- SUBARRAYS -------------//
-	
+
 	/*
 	 * In each case, a source subarray is either extracted from or inserted into a target larger array.
 	 * When the small array, sprout, is inserted, it is indexed from 0..sprout.length. The larger array,
 	 * img or sig, is indexed from read or write point pos to pos + length.
-	 * 
+	 *
 	 * All float[] arrays should contain audio range values (-1.0f..1.0f).
-	 * All int[] arrays should contain RGB pixel values. 
-	 * 
+	 * All int[] arrays should contain RGB pixel values.
+	 *
 	 */
-	
-	
+
+
 	/**
-	 * Starting at image coordinates (x, y), reads values from pixel array img using imageToSignalLUT 
+	 * Starting at image coordinates (x, y), reads values from pixel array img using imageToSignalLUT
 	 * to redirect indexing and returns them as an array of RGB pixel values in signal order.
-	 * 
+	 *
 	 * @param img			an array of RGB pixel values, typically from the bitmap image you are using with PixelAudioMapper
 	 * @param x				x coordinate of a point in the bitmap image from which img is derived
 	 * @param y				y coordinate of a point in the bitmap image from which img is derived
@@ -517,31 +473,31 @@ public class PixelAudioMapper {
 	 */
 	public int[] pluckPixels(int[] img, int x, int y, int length) {
 		int pos = x + y * this.width;
-		int[] petal = new int[length];		
+		int[] petal = new int[length];
 		for (int i = pos; i < pos + length; i++) {
 			int rgb = img[this.imageToSignalLUT[i]];
 			petal[i] = rgb;
-		}		
+		}
 		return petal;
 	}
-	
+
 	/*
 	// It's not clear to me when this signature might be useful. Not yet, anyhow.
 	public int[] pluckPixels(int[] img, int x, int y, int length, ChannelNames fromChannel) {
 		int pos = x + y * this.width;
-		int[] petal = new int[length];		
+		int[] petal = new int[length];
 		for (int i = pos; i < pos + length; i++) {
 
-		}		
+		}
 		return petal;
 	}
 	*/
 
-	
+
 	/**
-	 * Starting at image coordinates (x, y), reads values from pixel array img using imageToSignalLUT 
+	 * Starting at image coordinates (x, y), reads values from pixel array img using imageToSignalLUT
 	 * to redirect indexing and returns them as an array of transcoded audio values in signal order.
-	 * 
+	 *
 	 * @param img			source array of RGB pixel values, typically from the bitmap image you are using with PixelAudioMapper
 	 * @param x				x coordinate of a point in the bitmap image from which img is derived
 	 * @param y				y coordinate of a point in the bitmap image from which img is derived
@@ -556,7 +512,7 @@ public class PixelAudioMapper {
 		switch (fromChannel) {
 		case L: {
 			for (int i = pos; i < pos + length; i++) {
-				int rgb = img[this.imageToSignalLUT[i]];						// TODO is it worth lowering legibility and debugging clarity to 
+				int rgb = img[this.imageToSignalLUT[i]];						// TODO is it worth lowering legibility and debugging clarity to
 				samples[j++] = map(brightness(rgb), 0, 1, -1.0f, 1.0f);			// replace rgb with its value expression img[this.imageToSignalLUT[i]]
 			}																	// in hopes of gaining some speed? Probably not.
 			break;
@@ -613,13 +569,13 @@ public class PixelAudioMapper {
 			break;
 		}
 		}
-		return samples;		
+		return samples;
 	}
-	
+
 	/**
 	 * Starting at image coordinates (x, y), reads audio values from signal array sig starting at pos for length values
 	 * and returns a new array of audio values in signal order. No redirection is needed when reading from the signal.
-	 * 
+	 *
 	 * @param sig		source array of audio values
 	 * @param pos		a position in the sig array
 	 * @param length	number of values to read from sig array
@@ -633,10 +589,10 @@ public class PixelAudioMapper {
 		}
 		return samples;
 	}
-	
+
 	/**
 	 * Starting at pos in the sig[] array, read values and transcode them into RGB data.
-	 * 
+	 *
 	 * @param sig		source array of audio values (-1.0f..1.0f)
 	 * @param pos		entry point in the sig array
 	 * @param length	number of values to read from the sig array
@@ -654,11 +610,11 @@ public class PixelAudioMapper {
 		return rgbPixels;
 	}
 
-	
+
 	/**
-	 * Inserts elements from a source array of RGB pixel values into a target array of RGB pixel values 
-	 * following the signal path. 
-	 * 
+	 * Inserts elements from a source array of RGB pixel values into a target array of RGB pixel values
+	 * following the signal path.
+	 *
 	 * @param sprout	source array of RGB values to insert into target array img
 	 * @param img		target array of RGB values
 	 * @param x			x coordinate in image from which img pixel array was derived
@@ -672,12 +628,12 @@ public class PixelAudioMapper {
 			img[imageToSignalLUT[i]] = sprout[j++];
 		}
 	}
-	
-	
+
+
 	/**
-	 * Inserts elements from a source array of RGB pixel values into a specified color channel 
-	 * in a target array of RGB pixel values following the signal path. 
-	 * 
+	 * Inserts elements from a source array of RGB pixel values into a specified color channel
+	 * in a target array of RGB pixel values following the signal path.
+	 *
 	 * @param sprout	source array of RGB values to insert into target array img
 	 * @param img		target array of RGB values
 	 * @param x			x coordinate in image from which img pixel array was derived
@@ -703,7 +659,7 @@ public class PixelAudioMapper {
 				int rgb = img[this.imageToSignalLUT[i]];
 				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
 				rgb = Color.HSBtoRGB(hue(sprout[j]), hsbPixel[1], hsbPixel[2]);
-				img[this.imageToSignalLUT[i]] = rgb;				
+				img[this.imageToSignalLUT[i]] = rgb;
 				j++;
 			}
 			break;
@@ -713,32 +669,32 @@ public class PixelAudioMapper {
 				int rgb = img[this.imageToSignalLUT[i]];
 				Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
 				rgb = Color.HSBtoRGB(hsbPixel[0], saturation(sprout[j]), hsbPixel[2]);
-				img[this.imageToSignalLUT[i]] = rgb;			
+				img[this.imageToSignalLUT[i]] = rgb;
 				j++;
 			}
 			break;
 		}
 		case R: {
 			for (int i = pos; i < pos + length; i++) {
-				int r = (sprout[j] << 16) & 0xFF;	
+				int r = (sprout[j] << 16) & 0xFF;
 				int rgb = img[this.imageToSignalLUT[i]];
-				img[this.imageToSignalLUT[i]] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;	
+				img[this.imageToSignalLUT[i]] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
 				j++;
 			}
 			break;
 		}
 		case G: {
 			for (int i = pos; i < pos + length; i++) {
-				int g = (sprout[j] << 8) & 0xFF;	
+				int g = (sprout[j] << 8) & 0xFF;
 				int rgb = img[this.imageToSignalLUT[i]];
-				img[this.imageToSignalLUT[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | g << 8 | rgb & 0xFF;	
+				img[this.imageToSignalLUT[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | g << 8 | rgb & 0xFF;
 				j++;
 			}
 			break;
 		}
 		case B: {
 			for (int i = pos; i < pos + length; i++) {
-				int b = sprout[j] & 0xFF;	
+				int b = sprout[j] & 0xFF;
 				int rgb = img[this.imageToSignalLUT[i]];
 				img[this.imageToSignalLUT[i]] = 255 << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF;		// set new RGB value, change blue channel
 				j++;
@@ -762,12 +718,12 @@ public class PixelAudioMapper {
 		}
 		} // end switch
 	}
-	
-	
+
+
 	/**
-	 * Inserts elements from a source array of audio values (-1.0f..1.0f) into a specified color channel 
-	 * in a target array of RGB pixel values following the signal path. 
-	 * 
+	 * Inserts elements from a source array of audio values (-1.0f..1.0f) into a specified color channel
+	 * in a target array of RGB pixel values following the signal path.
+	 *
 	 * @param sprout	source array of RGB values to insert into target array img
 	 * @param img		target array of RGB values
 	 * @param x			x coordinate in image from which img pixel array was derived
@@ -828,11 +784,11 @@ public class PixelAudioMapper {
 		}
 		} // end switch
 	}
-	
+
 	/**
 	 * Insert audio samples from source array sprout into target array of audio samples sig. No redirection needed,
 	 * array values are already in signal order.
-	 * 
+	 *
 	 * @param sprout	source array of audio values (-1.0f..1.0f)
 	 * @param sig		target array of signal values
 	 * @param pos		start point in sig array
@@ -844,11 +800,11 @@ public class PixelAudioMapper {
 			sig[i] = sprout[j++];
 		}
 	}
-	
+
 	/**
-	 * Insert values from source array of RGB values sprout into target array sig of audio values (-1.0f..1.0f), 
-	 * transcoding from RGB to audio. 
-	 * 
+	 * Insert values from source array of RGB values sprout into target array sig of audio values (-1.0f..1.0f),
+	 * transcoding from RGB to audio.
+	 *
 	 * @param sprout
 	 * @param sig
 	 * @param pos
@@ -909,8 +865,8 @@ public class PixelAudioMapper {
 		case ALL: {
 			for (int i = pos; i < pos + length; i++) {
 				// convert to grayscale using the "luminosity equation."
-				sig[i] = map((0.3f * ((sprout[i] >> 16) & 0xFF) 
-						+ 0.59f * ((sprout[i] >> 8) & 0xFF) 
+				sig[i] = map((0.3f * ((sprout[i] >> 16) & 0xFF)
+						+ 0.59f * ((sprout[i] >> 8) & 0xFF)
 						+ 0.11f * (sprout[i] & 0xFF)), 0, 255, -1.0f, 1.0f);
 				j++;
 			}
@@ -919,13 +875,13 @@ public class PixelAudioMapper {
 		}
 
 	}
-	
+
 	/**
 	 * Copy a rectangular area of pixels in image (row major) order and return it as an array of RGB values.
 	 * This is a standard image method, for example, public PImage get(int x, int y, int w, int h) in Processing.
-	 * TODO How much error checking do we want in the pluck/plant/peel/stamp methods? 
+	 * TODO How much error checking do we want in the pluck/plant/peel/stamp methods?
 	 * If we check, do we fall through or post an error message?
-	 * 
+	 *
 	 * @param img
 	 * @param x
 	 * @param y
@@ -944,10 +900,10 @@ public class PixelAudioMapper {
 		}
 		return rgbPixels;
 	}
-	
+
 	/**
 	 * Copy a rectangular area of pixels in image (row major) order and return it as an array of audio values (-1.0f..1.0f).
-	 * 
+	 *
 	 * @param img
 	 * @param x
 	 * @param y
@@ -966,10 +922,10 @@ public class PixelAudioMapper {
 		}
 		return samples;
 	}
-	
+
 	/**
 	 * Follow the coordinates of rectangle defined by x, y, w, h and return the corresponding signal values.
-	 * 
+	 *
 	 * @param sig
 	 * @param x
 	 * @param y
@@ -988,7 +944,7 @@ public class PixelAudioMapper {
 		}
 		return samples;
 	}
-	
+
 	public int[] peelSamplesAsRGB(float[]sig, int x, int y, int w, int h) {
 		int len = w * h;
 		int[] rgbPixels = new int[len];
@@ -998,16 +954,16 @@ public class PixelAudioMapper {
 				rgbPixels[j++] =  Math.round(map(sig[this.imageToSignalLUT[dx + dy * w]], 0, 255, -1.0f, 1.0f));
 			}
 		}
-		return rgbPixels;		
+		return rgbPixels;
 	}
-	
-/*	
+
+/*
 	// I don't think this makes much sense, as far as eventual usefulness
     public int[] peelSamplesAsRGB(float[]sig, int pos, int length, ChannelNames toChannel) {
-		
+
 	}
 */
-	
+
 
 	public void stampPixels(int[] stamp, int[] img, int x, int y, int w, int h) {
 		int j = 0;
@@ -1017,7 +973,7 @@ public class PixelAudioMapper {
 			}
 		}
 	}
-	
+
 	public void stampPixels(int[] stamp, int[] img, int x, int y, int w, int h, ChannelNames toChannel) {
 		int j = 0;
 		switch (toChannel) {
@@ -1063,7 +1019,7 @@ public class PixelAudioMapper {
 					int rgb = img[dx + dy * w];
 					int r = (stamp[j] << 16) & 0xFF;
 					img[dx + dy * w] = 255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF;
-					;
+
 					j++;
 				}
 			}
@@ -1113,7 +1069,7 @@ public class PixelAudioMapper {
 		}
 		}
 	}
-	
+
 	public void stampPixels(float[] stamp, int[] img, int x, int y, int w, int h, ChannelNames toChannel) {
 		int j = 0;
 		switch (toChannel) {
@@ -1183,7 +1139,7 @@ public class PixelAudioMapper {
 			}
 			}
 		}
-	
+
 	public void stampSamples(float[] stamp, float[] sig, int x, int y, int w, int h) {
 		int j = 0;
 		for (int dy = y; dy < dy + h; dy++) {
@@ -1192,7 +1148,7 @@ public class PixelAudioMapper {
 			}
 		}
 	}
-	
+
 	public void stampSamples(int[] stamp, float[] sig, int x, int y, int w, int h) {
 		int j = 0;
 		for (int dy = y; dy < dy + h; dy++) {
@@ -1201,13 +1157,13 @@ public class PixelAudioMapper {
 			}
 		}
 	}
-	
-	
+
+
 	//------------- UTILITY -------------//
-	
-	
+
+
 	// lerp and map
-	
+
 	/**
 	 * Good old lerp.
 	 * @param a		first bound, typically a minimum value
@@ -1218,7 +1174,7 @@ public class PixelAudioMapper {
 	static public final float lerp(float a, float b, float f) {
 	    return a + f * (b - a);
 	}
-	
+
 	/**
 	 * Processing's map method, but with no error checking
 	 * @param value
@@ -1232,12 +1188,12 @@ public class PixelAudioMapper {
 		return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
 	}
 
-	
+
 	// array rotation
-	
+
 	/**
 	 * Rotates an array of ints left by d values. Uses efficient "Three Rotation" algorithm.
-	 * 
+	 *
 	 * @param arr array of ints to rotate
 	 * @param d   number of elements to shift
 	 */
@@ -1250,7 +1206,7 @@ public class PixelAudioMapper {
 
 	/**
 	 * Rotates an array of floats left by d values. Uses efficient "Three Rotation" algorithm.
-	 * 
+	 *
 	 * @param arr array of floats to rotate
 	 * @param d   number of elements to shift
 	 */
@@ -1263,7 +1219,7 @@ public class PixelAudioMapper {
 
 	/**
 	 * Reverses an arbitrary subset of an array of ints.
-	 * 
+	 *
 	 * @param arr array to modify
 	 * @param l   left bound of subset to reverse
 	 * @param r   right bound of subset to reverse
@@ -1277,11 +1233,11 @@ public class PixelAudioMapper {
 			l++;
 			r--;
 		}
-	}	
-	
+	}
+
 	/**
 	 * Reverses an arbitrary subset of an array of floats.
-	 * 
+	 *
 	 * @param arr array to modify
 	 * @param l   left bound of subset to reverse
 	 * @param r   right bound of subset to reverse
@@ -1295,14 +1251,14 @@ public class PixelAudioMapper {
 			l++;
 			r--;
 		}
-	}	
-	
-	
+	}
+
+
 	//------------- COLOR UTILITIES -------------//
-	
+
 	/**
 	 * Breaks a Processing color into R, G and B values in an array.
-	 * 
+	 *
 	 * @param rgb a Processing color as a 32-bit integer
 	 * @return an array of integers in the intRange 0..255 for 3 primary color
 	 *         components: {R, G, B}
@@ -1317,7 +1273,7 @@ public class PixelAudioMapper {
 
 	/**
 	 * Breaks a Processing color into R, G, B and A values in an array.
-	 * 
+	 *
 	 * @param argb a Processing color as a 32-bit integer
 	 * @return an array of integers in the intRange 0..255 for 3 primary color
 	 *         components: {R, G, B} plus alpha
@@ -1333,7 +1289,7 @@ public class PixelAudioMapper {
 
 	/**
 	 * Returns alpha channel value of a color.
-	 * 
+	 *
 	 * @param argb a Processing color as a 32-bit integer
 	 * @return an int for alpha channel
 	 */
@@ -1354,7 +1310,7 @@ public class PixelAudioMapper {
 	/**
 	 * Creates a Processing ARGB color from r, g, b, and alpha channel values. Note the order
 	 * of arguments, the same as the Processing color(value1, value2, value3, alpha) method.
-	 * 
+	 *
 	 * @param r red component 0..255
 	 * @param g green component 0..255
 	 * @param b blue component 0..255
@@ -1368,7 +1324,7 @@ public class PixelAudioMapper {
 	/**
 	 * Creates an opaque Processing RGB color from r, g, b values. Note the order
 	 * of arguments, the same as the Processing color(value1, value2, value3) method.
-	 * 
+	 *
 	 * @param r red component 0..255
 	 * @param g green component 0..255
 	 * @param b blue component 0..255
@@ -1380,7 +1336,7 @@ public class PixelAudioMapper {
 
 	/**
 	 * Creates a Processing ARGB color from r, g, b, values in an array.
-	 * 
+	 *
 	 * @param comp 	array of 3 integers in range 0..255, for red, green and blue
 	 *             	components of color alpha value is assumed to be 255
 	 * @return a 32-bit integer with bytes in Processing format ARGB.
@@ -1388,7 +1344,7 @@ public class PixelAudioMapper {
 	static public final int composeColor(int[] comp) {
 		return 255 << 24 | comp[0] << 16 | comp[1] << 8 | comp[2];
 	}
-	
+
 	/**
 	 * @param rgb	an RGB color value
 	 * @return		a number in the range [0, 255] equivalent to the luminosity value rgb
@@ -1398,8 +1354,8 @@ public class PixelAudioMapper {
 		float gray = 0.3f * ((rgb >> 16) & 0xFF) + 0.59f * ((rgb >> 8) & 0xFF) + 0.11f * (rgb & 0xFF);
 		return Math.round(gray);
 	}
-		
-	
+
+
 	/**
 	 * @param argb		an RGB color
 	 * @return			a String equivalent to a Processing color(r, g, b, a) call, such as "color(233, 144, 89, 255)"
@@ -1408,97 +1364,97 @@ public class PixelAudioMapper {
 		int[] comp = rgbaComponents(argb);
 		return "color(" + comp[0] + ", " + comp[1] + ", " + comp[2] + ", " + comp[3] + ")";
 	}
-	
-	
+
+
 	// -------- HSB <---> RGB -------- //
-	
+
 	/**
-	 * @param rgb	The RGB color from which we will obtain the hue component in the HSB color model. 
+	 * @param rgb	The RGB color from which we will obtain the hue component in the HSB color model.
 	 * @return		A floating point number in the range (0..1) that can be multiplied by 360 to get the hue angle.
 	 */
 	public float hue(int rgb) {
 		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
 		return hsbPixel[0];
 	}
-	
+
 	/**
-	 * @param rgb	The RGB color from which we will obtain the hue component in the HSB color model. 
+	 * @param rgb	The RGB color from which we will obtain the hue component in the HSB color model.
 	 * @return		A floating point number in the range (0..1) representing the saturation component of an HSB color.
 	 */
 	public float saturation(int rgb) {
 		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
 		return hsbPixel[1];
 	}
-	
+
 	/**
-	 * @param rgb	The RGB color from which we will obtain the hue component in the HSB color model. 
+	 * @param rgb	The RGB color from which we will obtain the hue component in the HSB color model.
 	 * @return		A floating point number in the range (0..1) representing the brightness component of an HSB color.
 	 */
 	public float brightness(int rgb) {
 		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);
 		return hsbPixel[2];
 	}
-	
-	
-	// ------------- APPLY COLOR CHANNEL METHODS ------------- // 
-	
+
+
+	// ------------- APPLY COLOR CHANNEL METHODS ------------- //
+
 	public int applyBrightness(float sample, int rgb) {
 		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
 		sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);								// map audio sample to (0..1)
 		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);	// pop over to HSB
-		return Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], sample);	
+		return Color.HSBtoRGB(hsbPixel[0], hsbPixel[1], sample);
 	}
-	
+
 	public int applyHue(float sample, int rgb) {
 		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
 		sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);								// map audio sample to (0..1)
 		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);	// pop over to HSB
-		return Color.HSBtoRGB(sample, hsbPixel[1], hsbPixel[2]);		
+		return Color.HSBtoRGB(sample, hsbPixel[1], hsbPixel[2]);
 	}
-	
+
 	public int applySaturation(float sample, int rgb) {
 		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
 		sample = map(sample, -1.0f, 1.0f, 0.0f, 1.0f);								// map audio sample to (0..1)
 		Color.RGBtoHSB((rgb >> 16) & 0xff, (rgb >> 8) & 0xff, rgb & 0xff, hsbPixel);	// pop over to HSB
 		return Color.HSBtoRGB(hsbPixel[0], sample, hsbPixel[2]);
 	}
-	
+
 	public int applyRed(float sample, int rgb) {
 		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
 		int r = Math.round(map(sample, -1.0f, 1.0f, 0, 255));						// map audio sample to [0, 255]
 		return (255 << 24 | r << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF);		// apply to red channel
 	}
-	
+
 	public int applyGreen(float sample, int rgb) {
 		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
 		int g = Math.round(map(sample, -1.0f, 1.0f, 0, 255));						// map audio sample to [0, 255]
 		return (255 << 24 | ((rgb >> 16) & 0xFF) << 16 | g << 8 | rgb & 0xFF);		// apply to green channel
 	}
-	
+
 	public int applyBlue(float sample, int rgb) {
 		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
 		int b = Math.round(map(sample, -1.0f, 1.0f, 0, 255));						// map audio sample to [0, 255]
 		return (255 << 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | b & 0xFF);	// apply to blue channel
 	}
-	
+
 	public int applyAlpha(float sample, int rgb) {
 		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
 		int a = Math.round(map(sample, -1.0f, 1.0f, 0, 255));						// map audio sample to [0, 255]
 		return (a<< 24 | ((rgb >> 16) & 0xFF) << 16 | ((rgb >> 8) & 0xFF) << 8 | rgb & 0xFF);	// apply to alpha channel
 	}
-	
+
 	public int applyAll(float sample, int rgb) {
 		sample = sample > 1.0f ? 1.0f : sample < 0 ? 0 : sample;					// a precaution, keep values within limits
 		int v = Math.round(map(sample, -1.0f, 1.0f, 0, 255));						// map audio sample to [0, 255]
 		return 255 << 24 | v << 16 | v << 8 | v;									// apply to all channels except alpha
 	}
-	
+
 
 	// ------------- AUDIO <---> IMAGE ------------- //
-	
+
 	/**
 	 * Converts a pixel channel value to an audio sample value, mapping the result to (-1.0..1.0).
-	 * 
+	 *
 	 * @param rgb		an RGB pixel value
 	 * @param chan		channel to extract from the RGB pixel value
 	 * @return
@@ -1542,16 +1498,16 @@ public class PixelAudioMapper {
 		}
 		}
 		return sample;
-	}	
-	
+	}
+
 
 	/**
 	 * Converts a pixel channel value to an audio sample value, mapping the result to (-1.0..1.0).
-	 * 
+	 *
 	 * @param rgbPixels		an array of RGB pixel values
-	 * @param samples		an array of audio samples whose values will be set from rgbPixels, which may be null. 
+	 * @param samples		an array of audio samples whose values will be set from rgbPixels, which may be null.
 	 * @param chan		    channel to extract from the RGB pixel values
-	 * 						Will be initialized and returned if null.  
+	 * 						Will be initialized and returned if null.
 	 * @return              a array of floats mapped to the audio range, identical to samples
 	 */
      public float[] pullPixelAudio(int[] rgbPixels, float[] samples, ChannelNames chan) {
@@ -1612,17 +1568,17 @@ public class PixelAudioMapper {
 		}
 		}
 		return samples;
-	}	
+	}
 
      /**
 	 * Converts a pixel channel value to an audio sample value, mapping the result to (-1.0..1.0).
 	 * A lookup table is used to redirect the indexing of the pixel values.
-	 * 
+	 *
 	 * @param rgbPixels		an array of RGB pixel values
 	 * @param lut			a lookup table for redirecting rgbPixels indexing, typically imageToSignalLUT
 	 * @param chan		    channel to extract from the RGB pixel values
-	 * @param samples		an array of audio samples whose values will be set from rgbPixels, which may be null. 
-	 * 						Will be initialized and returned if null.  
+	 * @param samples		an array of audio samples whose values will be set from rgbPixels, which may be null.
+	 * 						Will be initialized and returned if null.
 	 * @return              a array of floats mapped to the audio range, identical to samples
 	 */
      public float[] pullPixelAudio(int[] rgbPixels, int[] lut, float[] samples, ChannelNames chan) {
@@ -1683,22 +1639,22 @@ public class PixelAudioMapper {
 		}
 		}
 		return samples;
-	}	
+	}
 
-	
+
 	/**
 	 * Extracts a selected channel from an array of rgb values.
-	 * 
+	 *
 	 * From https://docs.oracle.com/javase/8/docs/api/, java.awt.Color, entry for getHSBColor():
-	 * 
-	 * The s and b components should be floating-point values between zero and one (numbers in the range 0.0-1.0). 
-	 * The h component can be any floating-point number. The floor of this number is subtracted from it to create 
-	 * a fraction between 0 and 1. This fractional number is then multiplied by 360 to produce the hue angle in 
+	 *
+	 * The s and b components should be floating-point values between zero and one (numbers in the range 0.0-1.0).
+	 * The h component can be any floating-point number. The floor of this number is subtracted from it to create
+	 * a fraction between 0 and 1. This fractional number is then multiplied by 360 to produce the hue angle in
 	 * the HSB color model.
-	 * 
+	 *
 	 * The values returned are within the ranges expected for the channel requested: (0..1) for HSB and [0, 255] for RGB.
 	 * If you want to use RGB channels as signal values, you'll need to map their range to (-1.0..1.0).
-	 * 
+	 *
 	 * @param rgbPixels rgb values in an array of int
 	 * @param chan      the channel to extract, a value from the ChannelNames enum
 	 * @return          the extracted channel values as an array of floats
@@ -1743,7 +1699,7 @@ public class PixelAudioMapper {
 	  }
 	  return buf;
 	}
-	
+
 
 	public int pushAudioPixel(float sample, int rgb, ChannelNames chan) {
 		switch (chan) {
@@ -1760,7 +1716,7 @@ public class PixelAudioMapper {
 			break;
 		}
 		case R: {
-			rgb = this.applyRed(sample, rgb);	
+			rgb = this.applyRed(sample, rgb);
 			break;
 		}
 		case G: {
@@ -1781,20 +1737,20 @@ public class PixelAudioMapper {
 		}
 		}
 		return rgb;
-	}	
+	}
 
 	/**
 	 * Replaces a specified channel in an array of pixel values, rgbPixels, with a value derived
-	 * from an array of floats, buf, that represent audio samples. Upon completion, the pixel array 
-	 * rgbPixels contains the new values, always in the RGB color space. 
-	 * 
+	 * from an array of floats, buf, that represent audio samples. Upon completion, the pixel array
+	 * rgbPixels contains the new values, always in the RGB color space.
+	 *
 	 * Both arrays, rgbPixels and buf, must be the same size.
-	 * 
-	 * In the HSB color space, values are assumed to be floats in the range (0..1), so the values 
-	 * from buf need to be mapped to the correct ranges for HSB or RGB [0, 255]. We do some minimal 
-	 * limiting of values derived from buf[], but it is the caller's responsibility to constrain them 
+	 *
+	 * In the HSB color space, values are assumed to be floats in the range (0..1), so the values
+	 * from buf need to be mapped to the correct ranges for HSB or RGB [0, 255]. We do some minimal
+	 * limiting of values derived from buf[], but it is the caller's responsibility to constrain them
 	 * to the audio range (-1..1).
-	 * 
+	 *
 	 * @param rgbPixels an array of pixel values
 	 * @param buf       an array of floats in the range (-1..1)
 	 * @param chan      the channel to replace
@@ -1857,23 +1813,23 @@ public class PixelAudioMapper {
 		}
 		}  // end switch
 		return rgbPixels;
-	}	
-	
+	}
+
 	/**
 	 * Replaces a specified channel in an array of pixel values, rgbPixels, with a value derived
-	 * from an array of floats, buf, that represent audio samples. The supplied lookup table, lut, 
-	 * is intended to redirect the indexing of rgbPixels following the signal path. We are stepping 
+	 * from an array of floats, buf, that represent audio samples. The supplied lookup table, lut,
+	 * is intended to redirect the indexing of rgbPixels following the signal path. We are stepping
 	 * through the buf array (the signal), so rgbPixels employs imageToSignalLUT to find where each
-	 * index i into buf is pointing in the image pixels array, which is rgbPixels.  Upon completion,  
-	 * the pixel array rgbPixels contains the new values, always in the RGB color space. 
-	 * 
+	 * index i into buf is pointing in the image pixels array, which is rgbPixels.  Upon completion,
+	 * the pixel array rgbPixels contains the new values, always in the RGB color space.
+	 *
 	 * All three arrays, rgbPixels, buf, and lut must be the same size.
-	 * 
-	 * In the HSB color space, values are assumed to be floats in the range (0..1), so the values 
-	 * from buf need to be mapped to the correct ranges for HSB or RGB [0, 255]. We do some minimal 
-	 * limiting of values derived from buf[], but it is the caller's responsibility to constrain them 
+	 *
+	 * In the HSB color space, values are assumed to be floats in the range (0..1), so the values
+	 * from buf need to be mapped to the correct ranges for HSB or RGB [0, 255]. We do some minimal
+	 * limiting of values derived from buf[], but it is the caller's responsibility to constrain them
 	 * to the audio range (-1..1).
-	 * 
+	 *
 	 * @param rgbPixels an array of pixel values
 	 * @param buf       an array of floats in the range (-1..1)
 	 * @param lut		a lookup table to redirect the indexing of the buf, typically imageToPixelsLUT
@@ -1937,10 +1893,10 @@ public class PixelAudioMapper {
 		}
 		}  // end switch
 		return rgbPixels;
-	}	
-	
-		
-	
+	}
+
+
+
 }
 
 
