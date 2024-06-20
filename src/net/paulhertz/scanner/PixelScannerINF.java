@@ -1,27 +1,27 @@
 /**
  * Interface for classes that map values in a one-dimensional array (signal)
- * to a two-dimensional bitmap (image), usually in orders other than 
+ * to a two-dimensional bitmap (image), usually in orders other than
  * the usual left to right and top to bottom (x,y) scan line order.
  * You can think of the signal as a function that traverses every pixel in
  * a bitmap. PixelScannerINF implementations implement the function and its
- * inverse however they see fit. A lookup table will do, and so will a 
- * mathematical function. The mapping can be accessed with the lookup() 
- * and xcoord() and ycoord() functions. Values can be read from and 
+ * inverse however they see fit. A lookup table will do, and so will a
+ * mathematical function. The mapping can be accessed with the lookup()
+ * and xcoord() and ycoord() functions. Values can be read from and
  * written to the signal and the bitmap data structures using the plant()
- * and pluck() methods. Again, the implementation is up the the user, 
+ * and pluck() methods. Again, the implementation is up the the user,
  * though the image data structure is necessarily (for now) a regular
  * old bitmap, typically a Processing PImage, and both signal and map
  * employ 24-bit RGB or 32-bit ARGB values. Backing arrays in other formats
  * can be used in an implementation where a high-resolution audio signa
- * is considered useful.  
- *  
- * PixelScanner classes generally do not implement the 1-D signal or 2-D image 
- * data structures themselves, they provide methods to map points in an image to  
- * positions in a signal and vice versa. In the sample classes in this library, the 
+ * is considered useful.
+ *
+ * PixelScanner classes generally do not implement the 1-D signal or 2-D image
+ * data structures themselves, they provide methods to map points in an image to
+ * positions in a signal and vice versa. In the sample classes in this library, the
  * mapping is accomplished with integer arrays. The image and signal data structures
- * that are implemented in external code are typically a 1-D array of floating point or 
- * integer values for signals and a standard 2-D bitmap array for images, encoded 
- * in horizontal scanline rows and vertical columns. 
+ * that are implemented in external code are typically a 1-D array of floating point or
+ * integer values for signals and a standard 2-D bitmap array for images, encoded
+ * in horizontal scanline rows and vertical columns.
  *
  */
 package net.paulhertz.scanner;
@@ -31,7 +31,7 @@ package net.paulhertz.scanner;
  *
  */
 public interface PixelScannerINF {
-	
+
 	/** @return the type of this scanner, read-only */
 	public PixelScanner.ScannerType getScannerType();
 
@@ -72,21 +72,22 @@ public interface PixelScannerINF {
 	abstract void plant(int[] pix, int[] sprout, int w, int h, int x, int y);
 
 	/** return a string representation of our data, possibly partial */
+	@Override
 	abstract String toString();
 
 	/** return a number representing recursion depth. If not applicable, return -1 */
 	abstract int getDepth();
 
 	/** return the width of the pixel array mapped in this PixelScannerINF instance */
-	abstract int getBlockWidth();  
+	abstract int getBlockWidth();
 
 	/** return the height of the pixel array mapped in this PixelScannerINF instance */
-	abstract int getBlockHeight();  
+	abstract int getBlockHeight();
 
 	/** return the number of pixel values mapped in this PixelScannerINF instance */
 	abstract int getSize();
 
-	/** given a pixel location, return the index of a point in the mapped representation */ 
+	/** given a pixel location, return the index of a point in the mapped representation */
 	abstract int lookup(int x, int y);
 
 	/** return the x coordinate at a specified index in the map */

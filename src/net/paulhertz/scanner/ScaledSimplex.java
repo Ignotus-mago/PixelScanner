@@ -17,7 +17,7 @@ public ScaledSimplex() {
 }
 
 public ScaledSimplex(int seed) {
- generator = new OpenSimplex2(); 
+ generator = new OpenSimplex2();
  this.seed = seed;
 }
 
@@ -28,7 +28,7 @@ public ScaledSimplex(int octaves, float detail) {
 }
 
 public ScaledSimplex(int octaves, float detail, int seed) {
- this(seed); 
+ this(seed);
  this.octaves = octaves;
  this.detail = detail;
 }
@@ -89,7 +89,7 @@ public void setNoiz(float noiz) {
 * @param iter    number of iterations of scaled noise (same as "octaves")
 * @param x       x-coordinate
 * @param y       y-coordinate
-* @param det     amount of detail retained from each scaled iteration, aka "persistence" 
+* @param det     amount of detail retained from each scaled iteration, aka "persistence"
 * @param scale   the effective distance between coordinate points, referred to as "inc" in our code
 * @param low     lower bound, typically for a pixel value
 * @param high    upper bound, typically for a pixel value
@@ -133,7 +133,7 @@ public float noise2(float x, float y, float low, float high) {
 * @param x       x-coordinate
 * @param y       y-coordinate
 * @param z       z-coordinate, incrementing z drives the animation over a 2D bitmap in x and y
-* @param det     amount of detail retained from each scaled iteration, aka "persistence" 
+* @param det     amount of detail retained from each scaled iteration, aka "persistence"
 * @param scale   the effective distance between coordinate points, referred to as "inc" in our code
 * @param low     lower bound, typically for a pixel value
 * @param high    upper bound, typically for a pixel value

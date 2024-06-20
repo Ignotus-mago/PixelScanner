@@ -1,8 +1,8 @@
 package net.paulhertz.scanner;
 
-// Bizarre error "PixelScannerINF cannot be resolved to a type" does not prevent compilation or library build. 
-// The same error appears for MooreScanner and HilbertScanner. It may have something to do with package level 
-// visibility of PixelScannerINF in GlitchSort2? 
+// Bizarre error "PixelScannerINF cannot be resolved to a type" does not prevent compilation or library build.
+// The same error appears for MooreScanner and HilbertScanner. It may have something to do with package level
+// visibility of PixelScannerINF in GlitchSort2?
 // Seems to be a common confusion in Eclipse. Clean the Project clears the error.
 public class ZigzagScanner implements PixelScannerINF {
 	/** zigzag x coord */
@@ -27,7 +27,7 @@ public class ZigzagScanner implements PixelScannerINF {
 	/**
 	 * @param order   the number of pixels on an edge of the scan block
 	 *                Note that in the Moore and Hilbert scanners the "order" param is called "depth"
-	 *                because its value is the depth of recursion of the curve. 
+	 *                because its value is the depth of recursion of the curve.
 	 *                TODO generalize ZigzagScanner to accept any height and width dimensions. At the moment, it's a square.
 	 */
 	public ZigzagScanner(int order) {
@@ -39,12 +39,14 @@ public class ZigzagScanner implements PixelScannerINF {
 		indexMap = new int[n];
 		generateCoords();
 	}
-	
+
+	@Override
 	public PixelScanner.ScannerType getScannerType() {
 		return PixelScanner.ScannerType.MOORE;
 	}
 
 
+	@Override
 	public void flipX() {
 		int m = d - 1;
 		for (int i = 0; i < xcoords.length; i++) {
@@ -52,6 +54,7 @@ public class ZigzagScanner implements PixelScannerINF {
 		}
 	}
 
+	@Override
 	public void flipY() {
 		int m = d - 1;
 		for (int i = 0; i < ycoords.length; i++) {
@@ -59,16 +62,19 @@ public class ZigzagScanner implements PixelScannerINF {
 		}
 	}
 
+	@Override
 	public void swapXY() {
 		// TODO Auto-generated method stub
 
 	}
 
+	@Override
 	public void swapCoords() {
 		// TODO Auto-generated method stub
 
 	}
 
+	@Override
 	public void generateCoords() {
 		int p = 0;
 		int n = 0;
@@ -133,6 +139,7 @@ public class ZigzagScanner implements PixelScannerINF {
 	 * @param y   y-coordinate of the location in the image to scan
 	 * @return an array in the order determined by the zigzag scan
 	 */
+	@Override
 	public int[] pluck(int[] pix, int w, int h, int x, int y) {
 		int len = n;
 		int[] out = new int[len];
@@ -154,6 +161,7 @@ public class ZigzagScanner implements PixelScannerINF {
 	 * @param x      x-coordinate of the location in the image to write to
 	 * @param y      y-coordinate of the location in the image to write to
 	 */
+	@Override
 	public void plant(int[] pix, int[] sprout, int w, int h, int x, int y) {
 		for (int i = 0; i < n; i++) {
 			int p = (y + ycoords[i]) * w + (x) + xcoords[i];
@@ -161,34 +169,41 @@ public class ZigzagScanner implements PixelScannerINF {
 		}
 	}
 
-	
+
 	/**
 	 * @return   returns -1 because the ZigzagScanner does not use recursion
 	 */
+	@Override
 	public int getDepth() {
 		return -1;
 	}
 
+	@Override
 	public int getBlockWidth() {
 		return d;
 	}
 
+	@Override
 	public int getBlockHeight() {
 		return d;
 	}
 
+	@Override
 	public int getSize() {
 		return n;
 	}
 
+	@Override
 	public int lookup(int x, int y) {
 		return indexMap[x + d * y];
 	}
 
+	@Override
 	public int xcoord(int pos) {
 		return xcoords[pos];
 	}
 
+	@Override
 	public int ycoord(int pos) {
 		return ycoords[pos];
 	}
@@ -196,9 +211,10 @@ public class ZigzagScanner implements PixelScannerINF {
 	/*
 	 * (non-Javadoc) returns a list of coordinate points that define a zigzag scan
 	 * of order d.
-	 * 
+	 *
 	 * @see java.lang.Object#toString()
 	 */
+	@Override
 	public String toString() {
 		StringBuffer buf = new StringBuffer();
 		buf.append("Zigzag order: " + this.d + "\n  ");

@@ -40,10 +40,10 @@ public class ArgosyArray {
 	boolean isCountShift = true;
   /** count the number of unit shifts */
   int argosyShiftStep = 0;
-	
+
   // an argosy pattern with 55 elements, 89 = (34 * 2 + 21) units long, derived from a Fibonacci L-system
-	public static int[] argosy55 = new int[]{2, 1, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2, 
-                                           1, 2, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2, 
+	public static int[] argosy55 = new int[]{2, 1, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2,
+                                           1, 2, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2,
                                            1, 2, 2, 1, 2, 2, 1, 2, 1, 2, 2, 1, 2};
 
 
@@ -66,7 +66,7 @@ public class ArgosyArray {
 		this.isCentered = isCentered;
 		this.bigArrayFill();
 	}
-	
+
 	/**
 	 * @param bigSize       size of the array
 	 * @param unitSize      size of a unit of the argosy
@@ -77,7 +77,7 @@ public class ArgosyArray {
 	 * @param gapScale      scaling for number of units in gap between argosies
    * @param argosy        a pattern of numbers, will be copied to argosyPattern
 	 */
-	public ArgosyArray(int bigSize, int unitSize, int reps, boolean isCentered, 
+	public ArgosyArray(int bigSize, int unitSize, int reps, boolean isCentered,
 			               int[]colors, int gapColor, float gapScale, int[] argosy) {
 		this.bigArray = new int[bigSize];
 		this.unitSize = unitSize;
@@ -94,31 +94,31 @@ public class ArgosyArray {
 		this.argosyGapScale = gapScale;
 		this.bigArrayFill();
 	}
-	
+
 	/* --------------------------------------------------------------------------- */
 	/*                                                                             */
 	/*    Initialization: call bigArrayFill(() when you change other values that   */
 	/*    affect the ordering of patterns and colors (just about everything).      */
 	/*                                                                             */
 	/* --------------------------------------------------------------------------- */
-	
-	
+
+
 	/**
 	 * Sets up the big array and fills it with colors using the argosy pattern.
 	 */
 	public void bigArrayFill() {
 		int bigSize = this.bigArray.length;
 		this.argosySize = 0;
-		for (int i = 0; i < argosyPattern.length; i++) {
-			argosySize += argosyPattern[i];
+		for (int element : argosyPattern) {
+			argosySize += element;
 		}
 		int maxReps = Math.round(bigSize / (argosySize * unitSize + argosyGap));
 		if (argosyReps > maxReps || argosyReps == 0) argosyReps = maxReps;
 		if (isCentered) {
-			// calculate how many repetitions of argosy + argosy gap fit into the array, 
+			// calculate how many repetitions of argosy + argosy gap fit into the array,
 			// minding that there is one less gap than the number of argosies
 			argosyMargin = bigSize - (argosyReps * (argosySize * unitSize + argosyGap) - argosyGap);
-			// margin on either side, to center the argosies in the array 
+			// margin on either side, to center the argosies in the array
 			// TODO review, revise argosyMargin calculations
 			argosyMargin /= 2;
 		}
@@ -130,7 +130,7 @@ public class ArgosyArray {
 	  this.argosyPixelShift = 0;
 	  argosyFill();
 	}
-	
+
 	/**
 	 * Fill the big array with the argosy pattern, called by bigArrayFill.
 	 */
@@ -160,17 +160,17 @@ public class ArgosyArray {
       if (reps == argosyReps) break;
     }
 	}
-	
-	
+
+
 	/* ----->>> ANIMATION <<<----- */
-	
+
 	/**
 	 * Rotates bigArray left by d values. Uses efficient "Three Rotation" algorithm.
 	 * @param d     number of elements to shift
 	 */
 	public void rotateLeft(int d) {
 		int[] arr = this.bigArray;
-	  if (d < 0) { 
+	  if (d < 0) {
 	    d = arr.length - (-d % arr.length);
 	  }
 	  else {
@@ -199,7 +199,7 @@ public class ArgosyArray {
 	    r--;
 	  }
 	}
-	
+
 	/**
 	 * basic animation, rotate right by animStep pixels, decrement the step counter argosyShiftStep
 	 */
@@ -215,7 +215,7 @@ public class ArgosyArray {
 		argosyShiftStep++;
 	}
 
-	
+
 
 	/**
 	 * @return the argosyPixelShift, save this if you want to reshift
@@ -225,7 +225,7 @@ public class ArgosyArray {
 	}
 
 	/**
-	 * Shifts left by a specified number of pixels, summing them to argosyPixelShift 
+	 * Shifts left by a specified number of pixels, summing them to argosyPixelShift
 	 * if isCounted is true.
 	 * @param pixelShift
 	 * @param isCounted
@@ -237,14 +237,14 @@ public class ArgosyArray {
 		isCountShift = oldCountShift;
 	}
 
-	
+
 	/* ----->>> GETTERS AND SETTERS <<<----- */
 	/*
 	 * These may have consequences, but implementation will have to wait.
-	 * For the moment, we just set up the array and animate. 
-	 * Calling bigArryFill() should reset everything after a change. 
+	 * For the moment, we just set up the array and animate.
+	 * Calling bigArryFill() should reset everything after a change.
 	 */
-	
+
 	/**
 	 * @return bigArray, but you really should get a copy if you want to do anything with it
 	 */
@@ -291,7 +291,7 @@ public class ArgosyArray {
 		bigArrayFill();
 	}
 
-	
+
 	/**
 	 * @return the animStep, number of pixels to shift in an animation
 	 */
@@ -347,7 +347,7 @@ public class ArgosyArray {
 	}
 	/**
 	 * Sets argosyGap and triggers a call to bigArrayFill() to reset the pattern in bigArray.
-	 * Usually it's better to set the argosyGapScale, but if you want a gap that isn't a 
+	 * Usually it's better to set the argosyGapScale, but if you want a gap that isn't a
 	 * multiple of unitSize, this is the way to do it.
 	 * @param argosyGap
 	 */
@@ -405,8 +405,8 @@ public int getArgosyMargin() {
 		this.argosyPattern = argosyPattern;
 		bigArrayFill();
 	}
-	
-	
+
+
 	/**
 	 * Sets new argosy colors and argosy gap color, triggers a call to bigArrayFill().
 	 * @param argosyColors
@@ -417,7 +417,7 @@ public int getArgosyMargin() {
 		this.argosyGapColor = argosyGapColor;
 		bigArrayFill();
 	}
-	
+
 
 	/* --------------------------------------------------------------------------- */
 	/*                                                                             */
@@ -425,10 +425,10 @@ public int getArgosyMargin() {
 	/*                                                                             */
 	/* --------------------------------------------------------------------------- */
 
-	
+
 	/**
 	 * An L-System generator for Fibonacci trees represented as a sequence of 0s and 1s.
-	 * 
+	 *
 	 * @param depth     depth of iteration of the L-System. A depth of 8 gets you an ArrayList with 34 elements.
 	 * @param verbose   Keep me informed. Or not.
 	 * @return          an ArrayList of String values "1" and "0".
@@ -437,24 +437,24 @@ public int getArgosyMargin() {
 		Lindenmeyer lind = new Lindenmeyer();
 		lind.put("0", "1");
 		lind.put("1", "01");
-		ArrayList<String> buf = new ArrayList<String>();
-		ArrayList<String> seed = new ArrayList<String>();
+		ArrayList<String> buf = new ArrayList<>();
+		ArrayList<String> seed = new ArrayList<>();
 		seed.add("0");
 		lind.expandString(seed, depth, buf);
 		if (verbose) {
 			System.out.println("Fibonacci L-system at depth "+ depth +"\n");
-			for (int i = 0; i < buf.size(); i++) {
-				System.out.print(buf.get(i));
+			for (String element : buf) {
+				System.out.print(element);
 			}
 		}
 		return buf;
 	}
 
 	/**
-	 * Generates an argosy pattern based on a Fibonacci tree. Depth 8 gets you a 34 element 
+	 * Generates an argosy pattern based on a Fibonacci tree. Depth 8 gets you a 34 element
 	 * sequence, and so Fibonacci forth. For example:
 	 *     int[] testPattern = argosyGen(8, 5, 8, true);
-	 * 
+	 *
 	 * @param depth     depth of iteration of the L-System. A depth of 8 gets you an array with 34 elements.
 	 * @param v1        value to substitute for a "0" in the ArrayList returned by fibo()
 	 * @param v2        value to substitute for a "1" in the ArrayList return by fibo()
@@ -479,7 +479,7 @@ public int getArgosyMargin() {
 		return argo;
 	}
 
-	
 
-	
+
+
 }

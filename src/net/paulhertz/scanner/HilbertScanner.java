@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package net.paulhertz.scanner;
 
@@ -49,7 +49,8 @@ public class HilbertScanner implements PixelScannerINF {
 		doXYSwap = (depth % 2 == 1);
 		generateCoords();
 	}
-	
+
+	@Override
 	public PixelScanner.ScannerType getScannerType() {
 		return PixelScanner.ScannerType.HILBERT;
 	}
@@ -73,7 +74,7 @@ public class HilbertScanner implements PixelScannerINF {
 	}
 
 	// convert curve index d to display coordinates (x,y), returning the result in bertx and berty
-	// n = number of points in curve, a power of 4 = (2^k * 2^k)  
+	// n = number of points in curve, a power of 4 = (2^k * 2^k)
 	private void d2xy(int n, int d) {
 		int rx, ry, s, t = d;
 		bertx = berty = 0;
@@ -105,6 +106,7 @@ public class HilbertScanner implements PixelScannerINF {
 		}
 	}
 
+	@Override
 	public void swapXY() {
 		int temp = berty;
 		berty = bertx;
@@ -114,6 +116,7 @@ public class HilbertScanner implements PixelScannerINF {
 	/**
 	 * Generates coordinates of a block of pixels of specified dimensions, offset from (0,0).
 	 */
+	@Override
 	public void generateCoords() {
 		int index = 0;
 		for (int i = 0; i < n; i++) {
@@ -126,6 +129,7 @@ public class HilbertScanner implements PixelScannerINF {
 	}
 
 
+	@Override
 	public void flipX() {
 		int m = d - 1;
 		for (int i = 0; i < xcoords.length; i++) {
@@ -133,6 +137,7 @@ public class HilbertScanner implements PixelScannerINF {
 		}
 	}
 
+	@Override
 	public void flipY() {
 		int m = d - 1;
 		for (int i = 0; i < ycoords.length; i++) {
@@ -141,6 +146,7 @@ public class HilbertScanner implements PixelScannerINF {
 	}
 
 
+	@Override
 	public void swapCoords() {
 		int[] temp = Arrays.copyOf(xcoords, xcoords.length);
 		xcoords = ycoords;
@@ -156,6 +162,7 @@ public class HilbertScanner implements PixelScannerINF {
 	 * @param y     y-coordinate of the location in the image to scan
 	 * @return      an array in the order determined by the Hilbert scan
 	 */
+	@Override
 	public int[] pluck(int[] pix, int w, int h, int x, int y) {
 		int len = d * d;
 		int[] out = new int[len];
@@ -177,6 +184,7 @@ public class HilbertScanner implements PixelScannerINF {
 	 * @param x        x-coordinate of the location in the image to write to
 	 * @param y        y-coordinate of the location in the image to write to
 	 */
+	@Override
 	public void plant(int[] pix, int[] sprout, int w, int h, int x, int y) {
 		for (int i = 0; i < d * d; i++) {
 			int p = (y + ycoords[i]) * w + (x) + xcoords[i];
@@ -188,6 +196,7 @@ public class HilbertScanner implements PixelScannerINF {
 	 * returns a list of coordinate points that define a scan of order d.
 	 * @see java.lang.Object#toString()
 	 */
+	@Override
 	public String toString() {
 		String buf = new String();
 		buf += ("Hilbert order: "+ this.d +"\n  ");
@@ -199,18 +208,22 @@ public class HilbertScanner implements PixelScannerINF {
 	}
 
 
+	@Override
 	public int getDepth() {
 		return depth;
 	}
 
+	@Override
 	public int getBlockWidth() {
 		return d;
 	}
 
+	@Override
 	public int getBlockHeight() {
 		return d;
 	}
 
+	@Override
 	public int getSize() {
 		return d * d;
 	}
@@ -222,19 +235,22 @@ public class HilbertScanner implements PixelScannerINF {
 	public void setVerbose(boolean verbose) {
 		this.verbose = verbose;
 	}
-	
+
 	public int[] getIndexMap() {
 		return this.indexMap;
 	}
 
+	@Override
 	public int lookup(int x, int y) {
 		return indexMap[x + d * y];
 	}
 
+	@Override
 	public int xcoord(int pos) {
 		return xcoords[pos];
 	}
 
+	@Override
 	public int ycoord(int pos) {
 		return ycoords[pos];
 	}

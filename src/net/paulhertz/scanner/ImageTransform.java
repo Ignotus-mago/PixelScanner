@@ -1,6 +1,6 @@
 package net.paulhertz.scanner;
 
-import processing.core.PApplet;
+import processing.core.PConstants;
 import processing.core.PGraphics;
 import processing.core.PImage;
 
@@ -76,7 +76,7 @@ public class ImageTransform {
 
 	/**
 	 * @param img    a PImage to transform
-	 * @param type   the ImageTransformType (ROT90CW, ROT90CCW, ROT180, FLIPX, FLIPY) 
+	 * @param type   the ImageTransformType (ROT90CW, ROT90CCW, ROT180, FLIPX, FLIPY)
 	 * @return       a transformed PImage from the PGraphics instance used for transforms
 	 */
 	public PImage transform(PImage img, ImageTransformType type) {
@@ -119,9 +119,9 @@ public class ImageTransform {
 
 	/**
 	 * Rotates or reflects a PImage, as specified by the type argument.
-	 * 
+	 *
 	 * @param img    a PImage to transform
-	 * @param type   the ImageTransformType (ROT90CW, ROT90CCW, ROT180, FLIPX, FLIPY) 
+	 * @param type   the ImageTransformType (ROT90CW, ROT90CCW, ROT180, FLIPX, FLIPY)
 	 * @param c      the background color for the image (affects the alpha channel of the output)
 	 * @return       a transformed PImage from the PGraphics instance used for transforms
 	 */
@@ -165,10 +165,10 @@ public class ImageTransform {
 	}
 
 	/**
-	 * Rotates and scales a PImage around its center. 	
-	 * You may need to set width and height with resizeGraphics before calling this method, 
-	 * e.g., when rotating by and angle other than a multiple of pi/2 radians. 
-	 * 
+	 * Rotates and scales a PImage around its center.
+	 * You may need to set width and height with resizeGraphics before calling this method,
+	 * e.g., when rotating by and angle other than a multiple of pi/2 radians.
+	 *
 	 * @param img    PImage to rotate and scale
 	 * @param rads   angle of rotation in radians
 	 * @param sx     x-axis scaling
@@ -190,10 +190,10 @@ public class ImageTransform {
 	}
 
 	/**
-	 * Rotates and scales a PImage around its center. 	
-	 * You may need to set width and height with resizeGraphics before calling this method, 
-	 * e.g., when rotating by and angle other than a multiple of pi/2 radians. 
-	 * 
+	 * Rotates and scales a PImage around its center.
+	 * You may need to set width and height with resizeGraphics before calling this method,
+	 * e.g., when rotating by and angle other than a multiple of pi/2 radians.
+	 *
 	 * @param img    PImage to rotate and scale
 	 * @param rads   angle of rotation in radians
 	 * @param sx     x-axis scaling
@@ -226,7 +226,7 @@ public class ImageTransform {
 		itGraf.pushMatrix();
 		// itGraf.background(255);
 		itGraf.translate(itw / 2, ith / 2);
-		itGraf.rotate(PApplet.HALF_PI);
+		itGraf.rotate(PConstants.HALF_PI);
 		itGraf.translate(-itw / 2, -ith / 2);
 		itGraf.image(img, 0, 0);
 		itGraf.popMatrix();
@@ -246,7 +246,7 @@ public class ImageTransform {
 		itGraf.pushMatrix();
 		itGraf.background(c);
 		itGraf.translate(itw / 2, ith / 2);
-		itGraf.rotate(PApplet.HALF_PI);
+		itGraf.rotate(PConstants.HALF_PI);
 		itGraf.translate(-itw / 2, -ith / 2);
 		itGraf.image(img, 0, 0);
 		itGraf.popMatrix();
@@ -265,7 +265,7 @@ public class ImageTransform {
 		itGraf.pushMatrix();
 		// itGraf.background(255);
 		itGraf.translate(itw / 2, ith / 2);
-		itGraf.rotate(-PApplet.HALF_PI);
+		itGraf.rotate(-PConstants.HALF_PI);
 		itGraf.translate(-itw / 2, -ith / 2);
 		itGraf.image(img, 0, 0);
 		itGraf.popMatrix();
@@ -285,7 +285,7 @@ public class ImageTransform {
 		itGraf.pushMatrix();
 		itGraf.background(c);
 		itGraf.translate(itw / 2, ith / 2);
-		itGraf.rotate(-PApplet.HALF_PI);
+		itGraf.rotate(-PConstants.HALF_PI);
 		itGraf.translate(-itw / 2, -ith / 2);
 		itGraf.image(img, 0, 0);
 		itGraf.popMatrix();
@@ -304,7 +304,7 @@ public class ImageTransform {
 		itGraf.pushMatrix();
 		// itGraf.background(255);
 		itGraf.translate(itw / 2, ith / 2);
-		itGraf.rotate(PApplet.PI);
+		itGraf.rotate(PConstants.PI);
 		itGraf.translate(-itw / 2, -ith / 2);
 		itGraf.image(img, 0, 0);
 		itGraf.popMatrix();
@@ -324,7 +324,7 @@ public class ImageTransform {
 		itGraf.pushMatrix();
 		itGraf.background(c);
 		itGraf.translate(itw / 2, ith / 2);
-		itGraf.rotate(PApplet.PI);
+		itGraf.rotate(PConstants.PI);
 		itGraf.translate(-itw / 2, -ith / 2);
 		itGraf.image(img, 0, 0);
 		itGraf.popMatrix();
@@ -378,7 +378,7 @@ public class ImageTransform {
     itGraf.pushMatrix();
     // itGraf.background(255);
     itGraf.translate(itw / 2, ith / 2);
-    itGraf.rotate(PApplet.HALF_PI);
+    itGraf.rotate(PConstants.HALF_PI);
     itGraf.translate(-itw / 2, -ith / 2);
     itGraf.scale(-1, 1);
     itGraf.image(img, -img.width, 0);
@@ -386,7 +386,7 @@ public class ImageTransform {
     itGraf.endDraw();
     return itGraf.get();
   }
-  
+
   /**
 	 * Reflects an image on the y-axis, flipping the x-coordinates, rotates it 90 degrees CW and returns a transformed copy
 	 * @param img   PImage to transform
@@ -399,7 +399,7 @@ public class ImageTransform {
     itGraf.pushMatrix();
     itGraf.background(c);
     itGraf.translate(itw / 2, ith / 2);
-    itGraf.rotate(PApplet.HALF_PI);
+    itGraf.rotate(PConstants.HALF_PI);
     itGraf.translate(-itw / 2, -ith / 2);
     itGraf.scale(-1, 1);
     itGraf.image(img, -img.width, 0);
@@ -419,7 +419,7 @@ public class ImageTransform {
     itGraf.pushMatrix();
     // itGraf.background(255);
     itGraf.translate(itw / 2, ith / 2);
-    itGraf.rotate(-PApplet.HALF_PI);
+    itGraf.rotate(-PConstants.HALF_PI);
     itGraf.translate(-itw / 2, -ith / 2);
     itGraf.scale(-1, 1);
     itGraf.image(img, -img.width, 0);
@@ -427,7 +427,7 @@ public class ImageTransform {
     itGraf.endDraw();
     return itGraf.get();
   }
-  
+
   /**
 	 * Reflects an image on the y-axis, flipping the x-coordinates, rotates it 90 degrees CCW and returns a transformed copy
 	 * @param img   PImage to transform
@@ -440,7 +440,7 @@ public class ImageTransform {
     itGraf.pushMatrix();
     itGraf.background(c);
     itGraf.translate(itw / 2, ith / 2);
-    itGraf.rotate(-PApplet.HALF_PI);
+    itGraf.rotate(-PConstants.HALF_PI);
     itGraf.translate(-itw / 2, -ith / 2);
     itGraf.scale(-1, 1);
     itGraf.image(img, -img.width, 0);
@@ -484,7 +484,7 @@ public class ImageTransform {
 		itGraf.endDraw();
 		return itGraf.get();
 	}
-	
+
 	/**
 	 * Leaves image geometry untransformed but possibly with a different background color (for images with an alpha channel)
 	 * @param img   PImage to transform
@@ -501,6 +501,6 @@ public class ImageTransform {
 		itGraf.endDraw();
 		return itGraf.get();
 	}
-	
+
 
 }

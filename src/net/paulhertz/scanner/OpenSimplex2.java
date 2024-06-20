@@ -330,18 +330,18 @@ public class OpenSimplex2 {
 
         return noise4_UnskewedBase(seed, xs, ys, zs, ws);
     }
-    
+
     /**
      * 4D OpenSimplex2 noise, with XY and ZW forming orthogonal triangular-based planes.
      * Recommended for 3D terrain, where X and Y (or Z and W) are horizontal.
      * Recommended for noise(x, y, sin(time), cos(time)) trick.
      */
     public static float noise4_ImproveXY_ImproveZW(long seed, double x, double y, double z, double w) {
-        
+
         double s2 = (x + y) * -0.178275657951399372 + (z + w) * 0.215623393288842828;
         double t2 = (z + w) * -0.403949762580207112 + (x + y) * -0.375199083010075342;
         double xs = x + s2, ys = y + s2, zs = z + t2, ws = w + t2;
-        
+
         return noise4_UnskewedBase(seed, xs, ys, zs, ws);
     }
 

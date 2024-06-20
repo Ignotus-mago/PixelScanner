@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package net.paulhertz.scanner;
 
@@ -48,6 +48,7 @@ public class MooreScanner implements PixelScannerINF {
 		generateCoords();
 	}
 
+	@Override
 	public PixelScanner.ScannerType getScannerType() {
 		return PixelScanner.ScannerType.MOORE;
 	}
@@ -56,10 +57,11 @@ public class MooreScanner implements PixelScannerINF {
 	/**
 	 * Generates coordinates of a block of pixels of specified dimensions, offset from (0,0).
 	 */
+	@Override
 	public void generateCoords() {
 		int index = 0;
 		int hilbDepth;
-		if (depth > 1) { 
+		if (depth > 1) {
 			hilbDepth = depth - 1;
 		}
 		else {
@@ -75,7 +77,7 @@ public class MooreScanner implements PixelScannerINF {
 			ycoords[index] = hilb.ycoord(i);
 			index++;
 		}
-		// shift y coordinate by Hilbert scanner's width 
+		// shift y coordinate by Hilbert scanner's width
 		int hilbWidth = hilb.getBlockWidth();
 		for (int i = 0; i < hilb.getSize(); i++) {
 			xcoords[index] = hilb.xcoord(i);
@@ -84,13 +86,13 @@ public class MooreScanner implements PixelScannerINF {
 		}
 		hilb.flipX();
 		hilb.flipY();
-		// shift x and y coordinates by Hilbert scanner's width 
+		// shift x and y coordinates by Hilbert scanner's width
 		for (int i = 0; i < hilb.getSize(); i++) {
 			xcoords[index] = hilb.xcoord(i) + hilbWidth;
 			ycoords[index] = hilb.ycoord(i) + hilbWidth;
 			index++;
 		}
-		// shift x coordinate by Hilbert scanner's width 
+		// shift x coordinate by Hilbert scanner's width
 		for (int i = 0; i < hilb.getSize(); i++) {
 			xcoords[index] = hilb.xcoord(i) + hilbWidth;
 			ycoords[index] = hilb.ycoord(i);
@@ -107,12 +109,14 @@ public class MooreScanner implements PixelScannerINF {
 	}
 
 
+	@Override
 	public void swapXY() {
 		int temp = moorey;
 		moorey = moorex;
 		moorex = temp;
 	}
 
+	@Override
 	public void flipX() {
 		int m = d - 1;
 		for (int i = 0; i < xcoords.length; i++) {
@@ -120,6 +124,7 @@ public class MooreScanner implements PixelScannerINF {
 		}
 	}
 
+	@Override
 	public void flipY() {
 		int m = d - 1;
 		for (int i = 0; i < ycoords.length; i++) {
@@ -128,6 +133,7 @@ public class MooreScanner implements PixelScannerINF {
 	}
 
 
+	@Override
 	public void swapCoords() {
 		int[] temp = Arrays.copyOf(xcoords, xcoords.length);
 		xcoords = ycoords;
@@ -143,6 +149,7 @@ public class MooreScanner implements PixelScannerINF {
 	 * @param y     y-coordinate of the location in the image to scan
 	 * @return      an array in the order determined by the Hilbert scan
 	 */
+	@Override
 	public int[] pluck(int[] pix, int w, int h, int x, int y) {
 		int len = d * d;
 		int[] out = new int[len];
@@ -164,6 +171,7 @@ public class MooreScanner implements PixelScannerINF {
 	 * @param x        x-coordinate of the location in the image to write to
 	 * @param y        y-coordinate of the location in the image to write to
 	 */
+	@Override
 	public void plant(int[] pix, int[] sprout, int w, int h, int x, int y) {
 		for (int i = 0; i < d * d; i++) {
 			int p = (y + ycoords[i]) * w + (x) + xcoords[i];
@@ -175,6 +183,7 @@ public class MooreScanner implements PixelScannerINF {
 	 * returns a list of coordinate points that define a scan of order d.
 	 * @see java.lang.Object#toString()
 	 */
+	@Override
 	public String toString() {
 		String buf = new String();
 		buf += ("Moore curve order: "+ this.d +"\n  ");
@@ -186,18 +195,22 @@ public class MooreScanner implements PixelScannerINF {
 	}
 
 
+	@Override
 	public int getDepth() {
 		return depth;
 	}
 
+	@Override
 	public int getBlockWidth() {
 		return d;
 	}
 
+	@Override
 	public int getBlockHeight() {
 		return d;
 	}
 
+	@Override
 	public int getSize() {
 		return d * d;
 	}
@@ -211,14 +224,17 @@ public class MooreScanner implements PixelScannerINF {
 	}
 
 	// get the index in the Moore curve of a specified Cartesian point
+	@Override
 	public int lookup(int x, int y) {
 		return indexMap[x + d * y];
 	}
 
+	@Override
 	public int xcoord(int pos) {
 		return xcoords[pos];
 	}
 
+	@Override
 	public int ycoord(int pos) {
 		return ycoords[pos];
 	}

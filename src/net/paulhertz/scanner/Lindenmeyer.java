@@ -4,23 +4,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /**
- * Implements a simple Lindenmeyer system (L-system), 
+ * Implements a simple Lindenmeyer system (L-system),
  * a so-called DOL-system: deterministic and context-free.
  * Load production strings into transTable with put(), retrieve them with get().
- * Was used by HilbertScanner until I sped it up more optimized methods. 
+ * Was used by HilbertScanner until I sped it up more optimized methods.
  */
 public class Lindenmeyer extends Object {
   // our handy tables
   /** transition table for string production */
   private HashMap<String, String> transTable;
   public boolean verbose = false;
-  
-  
+
+
   /**
    * Creates a new Lindenmeyer instance;
    */
   public Lindenmeyer() {
-    this.transTable = new HashMap<String, String>();
+    this.transTable = new HashMap<>();
   }
 
   /**
@@ -42,10 +42,10 @@ public class Lindenmeyer extends Object {
   public void put(String clef, String value) {
     transTable.put(clef, value);
   }
-  
+
   public void expandString(ArrayList<String> tokens, int levels, ArrayList<String> sb) {
     //System.out.println("level is "+ levels);
-    ArrayList<String> temp = new ArrayList<String>();
+    ArrayList<String> temp = new ArrayList<>();
     for (int i = 0; i < tokens.size(); i++) {
       String ch = tokens.get(i);
       String val = get(ch);
@@ -58,12 +58,12 @@ public class Lindenmeyer extends Object {
     }
     else {
       for (int j = 0; j < tokens.size(); j++) {
-        sb.add(tokens.get(j));  
+        sb.add(tokens.get(j));
       }
     }
   }
-  
- 
+
+
    /**
     * Encode strings representing a Hilbert curve to supplied depth.
     * To draw the actual curve, ignore the R and L symbols
@@ -75,33 +75,33 @@ public class Lindenmeyer extends Object {
      Lindenmeyer lind = new Lindenmeyer();
      lind.put("L", "+RF-LFL-FR+");
      lind.put("R", "-LF+RFR+FL-");
-     ArrayList<String> buf = new ArrayList<String>();
-     ArrayList<String> seed = new ArrayList<String>();
+     ArrayList<String> buf = new ArrayList<>();
+     ArrayList<String> seed = new ArrayList<>();
      seed.add("L");
      lind.expandString(seed, depth, buf);
      if (verbose) {
        System.out.println("Hilbert L-system at depth "+ depth +"\n");
-       for (int i = 0; i < buf.size(); i++) {
-    	   System.out.print(buf.get(i));
+       for (String element : buf) {
+    	   System.out.print(element);
        }
      }
      return buf;
    }
-   
-   
-   
-   
 
-   
+
+
+
+
+
    public int[] loadAnimSteps(AnimStepper stepper) {
 	   for (AnimUnit au : stepper.getList()) {
-	     
+
 	   }
 	   return null;
 	 }
 
-   
-   
+
+
 /**
  * Animation frame-counting tool
  */
@@ -112,7 +112,7 @@ public class AnimStepper {
 	   int t = 0;        // index of the current count over 0..currentUnit.d
 
 	   public AnimStepper() {
-	     this.stepList = new ArrayList<AnimUnit>();
+	     this.stepList = new ArrayList<>();
 	   }
 
 	   public AnimStepper(AnimUnit au) {
@@ -126,32 +126,32 @@ public class AnimStepper {
 
 	   public int totalSlide() {
 	     int slide = 0;
-	     for (int i = 0; i < stepList.size(); i++) {
-	       slide += stepList.get(i).slide();
+	     for (AnimUnit element : stepList) {
+	       slide += element.slide();
 	     }
 	     return slide;
 	   }
-	   
+
 	   public int totalSteps() {
 		     int steps = 0;
-		     for (int i = 0; i < stepList.size(); i++) {
-		       steps += stepList.get(i).getCount();
+		     for (AnimUnit element : stepList) {
+		       steps += element.getCount();
 		     }
-		     return steps;		   
+		     return steps;
 	   }
-	   
+
 	   public int totalFrames() {
 		     int frames = 0;
-		     for (int i = 0; i < stepList.size(); i++) {
-		       frames += stepList.get(i).frames() ;
+		     for (AnimUnit element : stepList) {
+		       frames += element.frames() ;
 		     }
-		     return frames; 
+		     return frames;
 	   }
-	   
+
 	   public int[] getStepArray() {
 		   int[] stepArray = new int[this.totalSteps()];
 		   for (AnimUnit au: this.stepList) {
-			   
+
 		   }
 		   return stepArray;
 	   }
@@ -160,7 +160,7 @@ public class AnimStepper {
 	     this.u = 0;
 	     this.t = 0;
 	   }
-	   
+
 	   public ArrayList<AnimUnit> getList() {
 	     return this.stepList;
 	   }
@@ -215,7 +215,7 @@ public class AnimUnit {
 	   public int slide() {
 	     return Math.round(this.s * this.frames());
 	   }
-	   
+
 	   public int[] toArray() {
 		   int[] arr = new int[n];
 		   for (int i = 0; i < n; i++) {
@@ -224,6 +224,6 @@ public class AnimUnit {
 		   return arr;
 	   }
 	 }
-  
-  
+
+
 }
