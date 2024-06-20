@@ -55,7 +55,7 @@ import java.util.Arrays;
  *	 Index values {0..(w * h - 1)} point into the pixel array.
  *	 Index to coordinate conversion for row major order with index i, width w, height h:
  *		i = x + w * y;
- *		x = i % w; y = floor(i/w);
+ *		x = i % w; y = i/w   // using integer math;
  *	 Default data format: 24-bit RGB or 32-bit RGBA, for display from a bitmap to a computer monitor.
  *	 RGBA includes an alpha channel A.
  * </pre>
