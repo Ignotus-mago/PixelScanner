@@ -29,7 +29,7 @@ public class HilbertGen extends PixelMapGen {
 	@Override
 	public boolean validate(int width, int height) {
 		if (this.w < 4) {
-			System.out.println("HilbertGen Error: 4 is the minimum valus for width and height.");
+			System.out.println("HilbertGen Error: 4 is the minimum value for width and height.");
 			return false;
 		}
 		if (this.w != this.h) {
