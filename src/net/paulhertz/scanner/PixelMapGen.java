@@ -5,9 +5,9 @@ import java.util.Arrays;
 
 /**
  *
- * Abstract class for handling LUT generation for PixelAudioMapper. PixelAudioMapper is designed to be independent of any specific mapping
- * between its audio and pixel arrays. It can handle any mapping via its LUTs. Keeping the LUT generation class outside PixelAudioMapper
- * removes any dependencies on the particular mapping.
+ * Abstract class for handling coordinates and LUT generation for PixelAudioMapper. PixelAudioMapper is designed to be independent 
+ * of any specific mapping between its audio and pixel arrays. It uses PixelMapGen classes as plug-ins to obtain values for its LUTs.
+ * Keeping the LUT generation class outside PixelAudioMapper removes dependencies on the particular mapping.
  *
  *
  *
@@ -57,10 +57,10 @@ import java.util.Arrays;
 public abstract class PixelMapGen {
 	public int w;
 	public int h;
-	public int len;
+	public int size;
 	public int[] pixelMap;
 	public int[] sampleMap;
-	ArrayList<int[]> coords;
+	public ArrayList<int[]> coords;
 	public final static String description = "Declare the description variable in your class and describe your PixelMapGen.";
 
 
@@ -76,14 +76,13 @@ public abstract class PixelMapGen {
 	 */
 	public PixelMapGen(int width, int height) {
 		// TODO throw an exception instead? This is not the usual way of handling errors in Processing.
-		if (!validate(w,h)) {
+		if (!this.validate(width, height)) {
 			System.out.println("Error: Validation failed");
 			return;
 		}
 		this.w = width;
 		this.h = height;
-		this.len = h * w;
-		this.generate();
+		this.size = h * w;
 	}
 
 
@@ -108,9 +107,13 @@ public abstract class PixelMapGen {
 
 	/**
 	 * Initialization method for coordinates (this.coords), signalToImageLUT (this.pixelMap), and
-	 * imageToSignalLUT (this.sampleMap) used by PixelAudioMapper classes.
+	 * imageToSignalLUT (this.sampleMap) used by PixelAudioMapper and its child classes. This must be 
+	 * called from your class, so you can initialize local variables before generating coordinates and LUTs.
+	 * The best place to call this is on the last line of the constructor for your class, after calling
+	 * super() and after initializing any local variables needed to generate your coordinates and LUTs.
 	 * You must initialize this.coords, this.pixelMap, and this.sampleMap within generate()
 	 * or other methods that it calls: See DiagonalZigzagGen for an example.
+	 * 
 	 * @return  this.pixelMap, the value for PixelAudioMapper.signalToImageLUT.
 	 */
 	public abstract int[] generate();
@@ -139,7 +142,7 @@ public abstract class PixelMapGen {
 	 * @return 	Size (width * height) of the bitmap associated with this PixelMapGen.
 	 */
 	public int getSize() {
-		return len;
+		return size;
 	}
 
 	/**
@@ -150,7 +153,7 @@ public abstract class PixelMapGen {
 	}
 
 	public int[] getPixelMapCopy() {
-		return Arrays.copyOf(pixelMap, len);
+		return Arrays.copyOf(pixelMap, size);
 	}
 
 	public int[] getSampleMap() {
@@ -158,7 +161,7 @@ public abstract class PixelMapGen {
 	}
 
 	public int[] getSampleMapCopy() {
-		return Arrays.copyOf(sampleMap, len);
+		return Arrays.copyOf(sampleMap, size);
 	}
 
 	public ArrayList<int[]> getCoordinates() {
@@ -166,12 +169,37 @@ public abstract class PixelMapGen {
 	}
 
 	public ArrayList<int[]> getCoordinatesCopy() {
-		ArrayList<int[]> coordsCopy = new ArrayList<>(len);
+		ArrayList<int[]> coordsCopy = new ArrayList<>(size);
 		for (int[] coord: this.coords) {
 			coordsCopy.add(coord);
 		}
 		return coordsCopy;
 	}
+	
 
+	// ------------- STATIC METHODS FOR POWERS OF TWO ------------- //
+	   
+	public static boolean isPowerOfTwo(int n) {
+		// n must be greater than 0 and n & (n - 1) should be 0
+		return n > 0 && (n & (n - 1)) == 0;
+	}
+	
+	public static int findPowerOfTwo(int n) {
+        if (n <= 0 || (n & (n - 1)) != 0) {
+            throw new IllegalArgumentException("The number must be a positive power of 2. n = "+ n);
+        }
+        return Integer.numberOfTrailingZeros(n);
+    }
+
+    public static int findNearestPowerOfTwoLessThan(int n) {
+        if (n <= 1) {
+            throw new IllegalArgumentException("There is no power of 2 less than the given number.");
+        }
+        int p = 1;			// Start with the highest bit position
+        while (p < n) {
+            p <<= 1; 		// Shift left to find the next power of 2
+        }
+        return p >> 1; 		// Shift right to get the previous power of 2
+    }
 
 }

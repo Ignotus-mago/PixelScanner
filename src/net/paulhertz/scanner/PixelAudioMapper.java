@@ -5,6 +5,7 @@ package net.paulhertz.scanner;
 
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 
@@ -318,6 +319,14 @@ public class PixelAudioMapper {
 		for (int i = 0; i < width * height - 1; i++) {
 			this.imageToSignalLUT[sigLUT[i]] = i;
 		}
+	}
+	
+	public PixelMapGen getGenerator() {
+		return this.generator;
+	}
+	
+	public ArrayList<int[]> getGeneratorCoordinatesCopy() {
+		return this.generator.getCoordinatesCopy();
 	}
 
 

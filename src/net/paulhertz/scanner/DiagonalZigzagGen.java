@@ -14,6 +14,7 @@ public class DiagonalZigzagGen extends PixelMapGen {
 
 	public DiagonalZigzagGen(int width, int height) {
 		super(width, height);
+		this.generate();
 	}
 
 
@@ -78,7 +79,7 @@ public class DiagonalZigzagGen extends PixelMapGen {
 	 * @return 				an array of coordinate pairs
 	 */
 	private ArrayList<int[]> generateZigzagDiagonalCoordinates(int width, int height) {
-		ArrayList<int[]> coordinates = new ArrayList<>();
+		ArrayList<int[]> coordinates = new ArrayList<int[]>(width * height);
 		int x = 0, y = 0;
 		boolean movingUp = false;
 		while (x < width && y < height) {
